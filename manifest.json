@@ -1,7 +1,7 @@
 {
   "name": "Memory Matrix Pro",
   "short_name": "Matrix Pro",
-  "start_url": "./Luyen nao v7.html",
+  "start_url": "./index.html",
   "display": "fullscreen",
   "background_color": "#1565C0",
   "theme_color": "#1565C0",
