@@ -1,5 +1,5 @@
 const CACHE_NAME = 'matrix-v1';
-const urlsToCache = [ './Luyen nao v7.html' ];
+const urlsToCache = [ './index.html' ];
 
 self.addEventListener('install', event => {
   self.skipWaiting();
