@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory Matrix Pro V6.0 - Ultimate Leaderboard & Profile Edition</title>
+    <link rel="manifest" href="./manifest.json">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --bg-color: #2196F3;
+            --grid-bg: #1e88e5;
+            --tile-normal: #64b5f6;
+            --tile-flash: #ffffff;
+            --tile-flash-b: #FFEB3B; 
+            --tile-dist: #E91E63;    
+            --tile-correct: #4CAF50;
+            --tile-wrong-soft: #4a8ec7;
+            --tab-active: #ffffff;
+            --tab-inactive: rgba(255, 255, 255, 0.2);
+            --accent-gold: #ffca28;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background-color: #1565C0;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- CƠ CHẾ CUỘN TRANG --- */
+        .scroll-container {
+            width: 100%;
+            max-width: 450px;
+            height: 100vh;
+            max-height: 850px;
+            overflow-y: scroll;
+            scroll-snap-type: y mandatory;
+            scrollbar-width: none;
+        }
+        .scroll-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        .screen-section {
+            width: 100%;
+            height: 100vh;
+            max-height: 850px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            scroll-snap-align: start;
+            position: relative;
+            background-color: var(--bg-color);
+        }
+
+        #leaderboard-screen {
+            background-color: #1a237e;
+            justify-content: flex-start;
+            padding-top: 30px;
+        }
+
+        .menu-title {
+            font-size: 42px;
+            font-weight: 900;
+            text-align: center;
+            margin-bottom: 15px;
+            text-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            line-height: 1.1;
+        }
+
+        .menu-desc {
+            font-size: 14px;
+            opacity: 0.8;
+            text-align: center;
+            margin-bottom: 20px;
+            font-style: italic;
+        }
+
+        .menu-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 85%;
+        }
+
+        .scroll-hint {
+            position: absolute;
+            bottom: 20px;
+            font-size: 13px;
+            opacity: 0.7;
+            text-align: center;
+            cursor: pointer;
+            animation: bounce 2s infinite;
+        }
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-6px); }
+            60% { transform: translateY(-3px); }
+        }
+
+        /* --- THIẾT KẾ KHU VỰC HỒ SƠ TÊN NGƯỜI CHƠI (PROFILE NAME) --- */
+        .name-setting-box {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 6px 12px;
+            border-radius: 20px;
+            width: 90%;
+            margin-bottom: 12px;
+            border: 1px dashed rgba(255, 255, 255, 0.2);
+        }
+        .name-label {
+            font-size: 12px;
+            white-space: nowrap;
+            opacity: 0.8;
+        }
+        .name-input {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 13px;
+            font-weight: bold;
+            width: 100%;
+            outline: none;
+        }
+        .name-input::placeholder { color: rgba(255,255,255,0.4); }
+        .btn-save-name {
+            background: var(--accent-gold);
+            color: #1a237e;
+            border: none;
+            padding: 3px 10px;
+            font-size: 11px;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: pointer;
+        }
+
+        /* --- GIAO DIỆN BẢNG XẾP HẠNG PHÂN TAB ĐA NĂNG --- */
+        .bxh-title {
+            font-size: 24px;
+            font-weight: 800;
+            margin-bottom: 12px;
+            text-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            letter-spacing: 1px;
+        }
+
+        .bxh-filters {
+            width: 90%;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+        .filter-row {
+            display: flex;
+            justify-content: center;
+            gap: 4px;
+            width: 100%;
+        }
+        
+        /* Loại BXH: Trực tuyến vs Cá nhân */
+        .type-row .tab-btn {
+            background: rgba(0, 0, 0, 0.3);
+            font-size: 13px;
+            padding: 8px 15px;
+            border-radius: 8px;
+        }
+        .type-row .tab-btn.active {
+            background: #ff9800;
+            color: white;
+            box-shadow: 0 3px 10px rgba(255,152,0,0.3);
+        }
+
+        .tab-btn {
+            background: var(--tab-inactive);
+            border: none;
+            color: rgba(255, 255, 255, 0.7);
+            padding: 6px 8px;
+            font-size: 11px;
+            font-weight: bold;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex: 1;
+            text-align: center;
+            white-space: nowrap;
+        }
+        .tab-btn.active {
+            background: var(--tab-active);
+            color: #1a237e;
+        }
+
+        .bxh-container {
+            width: 90%;
+            background: rgba(0, 0, 0, 0.2.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            height: 330px; 
+        }
+        .bxh-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 6px;
+            font-size: 13px;
+            height: 28px;
+        }
+        .bxh-row .rank-name {
+            display: flex;
+            gap: 10px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .bxh-row .rank-num {
+            font-weight: bold;
+            color: var(--accent-gold);
+            width: 22px;
+        }
+        .bxh-row .player-score {
+            font-weight: bold;
+            color: #40c4ff;
+        }
+        .bxh-row.my-row {
+            background: rgba(255, 235, 59, 0.15);
+            border: 1px solid rgba(255, 235, 59, 0.3);
+        }
+        
+        .btn-up-arrow {
+            background: none;
+            border: 1px solid rgba(255,255,255,0.4);
+            color: rgba(255,255,255,0.8);
+            padding: 6px 20px;
+            border-radius: 20px;
+            margin-top: 15px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 13px;
+        }
+
+        /* --- MÀN HÌNH CHƠI GAME & OVERLAY --- */
+        #game-screen {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            max-width: 450px;
+            height: 100vh;
+            max-height: 850px;
+            padding: 20px;
+            background-color: var(--bg-color);
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .score-board { text-align: center; margin: 5px 0; }
+        .score-board h1 { font-size: 42px; font-weight: 800; }
+        .score-board p { font-size: 13px; opacity: 0.8; text-transform: uppercase; }
+
+        .grid-container {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            background-color: var(--grid-bg);
+            border-radius: 15px;
+            padding: 10px;
+            display: grid;
+            gap: 5px; 
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .grid-container.rotate-90 { transform: rotate(90deg); }
+
+        .tile {
+            background-color: var(--tile-normal);
+            border-radius: 6px; 
+            cursor: pointer;
+        }
+        .tile.flash { background-color: var(--tile-flash); }
+        .tile.flash-b { background-color: var(--tile-flash-b); }
+        .tile.flash-dist { background-color: var(--tile-dist); }
+        .tile.correct { background-color: var(--tile-correct); }
+        .tile.correct-b { background-color: #8BC34A; }
+        .tile.wrong { background-color: var(--tile-wrong-soft); }
+
+        .footer { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 10px;}
+        .btn {
+            background-color: white;
+            color: var(--bg-color);
+            border: none;
+            padding: 14px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            width: 100%;
+            text-align: center;
+        }
+        .btn-hint { background-color: #FF9800; color: white; padding: 8px 20px; font-size: 14px; border-radius: 20px; width: auto; }
+        .btn-hint:disabled { background-color: #b0bec5; opacity: 0.6; }
+
+        .btn[data-mode="classic"] { color: #2196F3; }
+        .btn[data-mode="seq"] { color: #F57C00; }
+        .btn[data-mode="dist"] { color: #E91E63; }
+        .btn[data-mode="rot"] { color: #9C27B0; }
+        .btn[data-mode="color"] { color: #009688; }
+
+        .status-text { font-size: 14px; height: 35px; text-align: center; font-style: italic; opacity: 0.9; }
+
+        /* MÀN HÌNH GAME OVER OVERLAY TÍCH HỢP BXH */
+        #gameover-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #111646;
+            z-index: 200;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            padding: 25px 20px;
+            overflow-y: auto;
+        }
+        .go-title { font-size: 30px; font-weight: 900; color: #ff5252; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+        .go-stat { font-size: 15px; margin: 5px 0; opacity: 0.9; text-align: center;}
+        .go-score { font-size: 34px; font-weight: 800; color: #ffeb3b; margin-bottom: 5px; }
+
+        .go-profile-box {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 235, 59, 0.3);
+            border-radius: 12px;
+            padding: 10px;
+            width: 90%;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .go-profile-box p { font-size: 12px; margin-bottom: 6px; color: #ffca28; font-weight: bold; }
+        .go-input-container { display: flex; gap: 5px; }
+        .go-name-input {
+            flex: 1; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2);
+            padding: 6px 10px; border-radius: 6px; color: white; font-weight: bold; text-align: center; outline: none;
+        }
+
+        #go-bxh-container { height: 260px; } /* Thu nhỏ một chút để vừa màn hình overlay */
+    </style>
+</head>
+<body>
+
+    <div class="scroll-container" id="main-scroll">
+        
+        <div id="menu-screen" class="screen-section">
+            <div class="menu-title">Memory<br>Matrix</div>
+            <div class="menu-desc">Chọn chế độ để kiểm tra giới hạn não bộ</div>
+
+            <div class="menu-buttons">
+                <button class="btn mode-btn" data-mode="classic">Chơi (Cổ Điển)</button>
+                <button class="btn mode-btn" data-mode="seq">Chơi (Nhớ Thứ Tự)</button>
+                <button class="btn mode-btn" data-mode="dist">Chơi (Chống Nhiễu)</button>
+                <button class="btn mode-btn" data-mode="rot">Chơi (Xoay Ma Trận)</button>
+                <button class="btn mode-btn" data-mode="color">Chơi (Đa Sắc)</button>
+            </div>
+
+            <div class="scroll-hint" onclick="slowScrollTo('leaderboard-screen')">
+                <span>🏆 Xem Bảng Xếp Hạng</span>
+                <div>↓</div>
+            </div>
+        </div>
+
+        <div id="leaderboard-screen" class="screen-section">
+            <div class="bxh-title">🏆 CAO THỦ MATRIX 🏆</div>
+            
+            <div class="name-setting-box">
+                <span class="name-label">Danh tính:</span>
+                <input type="text" id="menu-name-input" class="name-input" placeholder="Nhập danh tính của bạn..." maxlength="20">
+                <button class="btn-save-name" onclick="savePlayerName('menu')">Lưu</button>
+            </div>
+
+            <div class="bxh-filters">
+                <div class="filter-row type-row">
+                    <button class="tab-btn active" data-l-type="online">🌐 Trực Tuyến</button>
+                    <button class="tab-btn" data-l-type="personal">👤 Cá Nhân Của Bạn</button>
+                </div>
+                <div class="filter-row mode-row">
+                    <button class="tab-btn active" data-l-mode="classic">Cổ Điển</button>
+                    <button class="tab-btn" data-l-mode="seq">Thứ Tự</button>
+                    <button class="tab-btn" data-l-mode="dist">Nhiễu</button>
+                    <button class="tab-btn" data-l-mode="rot">Xoay</button>
+                    <button class="tab-btn" data-l-mode="color">Sắc</button>
+                </div>
+                <div class="filter-row time-row">
+                    <button class="tab-btn" data-l-time="week">Tuần</button>
+                    <button class="tab-btn active" data-l-time="month">Tháng</button>
+                    <button class="tab-btn" data-l-time="all">Toàn Thời Gian</button>
+                </div>
+            </div>
+
+            <div class="bxh-container" id="menu-bxh-rows">
+                </div>
+
+            <button class="btn-up-arrow" onclick="slowScrollTo('menu-screen')">▲ Quay Lại Menu</button>
+        </div>
+
+    </div>
+
+    <div id="game-screen">
+        <div class="header">
+            <div>Màn: <span id="level-val">1</span></div>
+            <div>Mạng: <span id="lives-val">3</span></div>
+        </div>
+        <div class="score-board">
+            <h1 id="score-val">0</h1>
+            <p id="mode-label">Chế độ</p>
+        </div>
+        <div id="grid" class="grid-container"></div>
+        <div class="footer">
+            <div id="status" class="status-text">Đang chuẩn bị...</div>
+            <button id="btn-hint" class="btn btn-hint">Gợi ý (-1 Mạng)</button>
+        </div>
+
+        <div id="gameover-overlay">
+            <div class="go-title">HẾT MẠNG!</div>
+            <div class="go-stat" id="go-mode-reached">Chế độ: Cổ Điển - Màn đạt được: 1</div>
+            <div class="go-score" id="go-score-final">0đ</div>
+
+            <div class="go-profile-box">
+                <p id="go-record-alert">Ghi danh bảng vàng thành tích này:</p>
+                <div class="go-input-container">
+                    <input type="text" id="go-name-input" class="go-name-input" placeholder="Tên của bạn..." maxlength="20">
+                    <button class="btn-save-name" style="padding:0 15px;" onclick="savePlayerName('go')">Lưu</button>
+                </div>
+            </div>
+
+            <div class="bxh-filters">
+                <div class="filter-row type-row">
+                    <button class="tab-btn" id="go-tab-personal" onclick="switchGoType('personal')">👤 Điểm Cá Nhân</button>
+                    <button class="tab-btn active" id="go-tab-online" onclick="switchGoType('online')">🌐 Bạn Bè Trực Tuyến</button>
+                </div>
+                <div class="filter-row time-row">
+                    <button class="tab-btn" id="go-time-week" onclick="switchGoTime('week')">Tuần</button>
+                    <button class="tab-btn active" id="go-time-month" onclick="switchGoTime('month')">Tháng</button>
+                    <button class="tab-btn" id="go-time-all" onclick="switchGoTime('all')">Toàn Thời Gian</button>
+                </div>
+            </div>
+
+            <div class="bxh-container" id="go-bxh-container"></div>
+
+            <button class="btn" style="margin-top:15px; background:#4ffefc; color:#111646;" onclick="quitToMenu()">Về Menu Chính</button>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // ĐẦU KHỐI: CORE SYSTEM VÀ DATABASE SUPABASE (V7.3)
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js').catch(err => console.log("SW Register failed (bỏ qua nếu test local)"));
+        }
+
+        window.SUPABASE_URL = 'https://zyymowgbbxpsrkoxomoj.supabase.co';
+        window.SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp5eW1vd2diYnhwc3Jrb3hvbW9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3MDAyOTUsImV4cCI6MjA5NzI3NjI5NX0.hgDtLVQT8ZzsGnFfrQdSLzOaJbHLuaKnXl0NMQGEpWs';
+        
+        window.supabaseClient = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
+
+        async function initAuth() {
+            const { error } = await window.supabaseClient.auth.signInAnonymously();
+            if (error) console.error("Lỗi Auth:", error.message);
+        }
+        initAuth();
+
+        async function saveHighScore(playerName, score, mode) {
+            if (!window.supabaseClient) return;
+            const { data: { user } } = await window.supabaseClient.auth.getUser();
+            if (!user) return;
+            const { error } = await window.supabaseClient.from('leaderboard').insert([
+                { user_id: user.id, player_name: playerName, score: score, mode: mode }
+            ]);
+            if (error) console.error("Lỗi gửi điểm:", error.message);
+        }
+
+        async function fetchLeaderboard(mode, limit = 10) {
+            if (!window.supabaseClient) return [];
+            const { data, error } = await window.supabaseClient
+                .from('leaderboard')
+                .select('player_name, score')
+                .eq('mode', mode)
+                .order('score', { ascending: false })
+                .limit(limit);
+            if (error) { console.error("Lỗi tải BXH:", error.message); return []; }
+            return data.map(item => ({ n: item.player_name, s: item.score }));
+        }
+
+        const state = {
+            mode: 'classic', level: 1, score: 0, lives: 3, gridSize: 3, tilesToRemember: 3,
+            sequence: [], seqA: [], seqB: [], userCorrectCount: 0, wrongClicksInRound: 0,
+            isShowingPattern: false, isPlaying: false, firstClickTime: null, hintUsedInRound: false,
+            playerName: '',
+            menuTabType: 'online', menuTabMode: 'classic', menuTabTime: 'month',
+            goTabType: 'online', goTabTime: 'month'
+        };
+
+        const MODE_NAMES = { classic: 'Cổ Điển', seq: 'Nhớ Thứ Tự', dist: 'Chống Nhiễu', rot: 'Xoay Ma Trận', color: 'Đa Sắc' };
+
+        // Dữ liệu dự phòng (Không được xóa để chống Crash)
+        const mockOnlineData = {
+            classic: { week: [], month: [], all: [] },
+            seq: { week: [], month: [], all: [] },
+            dist: { week: [], month: [], all: [] },
+            rot: { week: [], month: [], all: [] },
+            color: { week: [], month: [], all: [] }
+        };
+
+        function initPlayerProfile() {
+            let savedName = localStorage.getItem('mm_player_name');
+            let hasSetName = localStorage.getItem('mm_has_set_name');
+            
+            if (!savedName) {
+                savedName = 'Player_' + Math.floor(1000 + Math.random() * 9000);
+                localStorage.setItem('mm_player_name', savedName);
+            }
+            state.playerName = savedName;
+            document.getElementById('menu-name-input').value = savedName;
+            document.getElementById('go-name-input').value = savedName;
+
+            // Ẩn thanh nhập tên nếu đã từng bấm lưu
+            if (hasSetName === 'true') {
+                let mBox = document.querySelector('.name-setting-box');
+                let gBox = document.querySelector('.go-profile-box');
+                if(mBox) mBox.style.display = 'none';
+                if(gBox) gBox.style.display = 'none';
+            }
+        }
+
+        function savePlayerName(source) {
+            let newName = source === 'menu' ? document.getElementById('menu-name-input').value.trim() : document.getElementById('go-name-input').value.trim();
+            if (newName === "") return alert("Tên không được để trống!");
+
+            state.playerName = newName;
+            localStorage.setItem('mm_player_name', newName);
+            localStorage.setItem('mm_has_set_name', 'true'); 
+            
+            document.getElementById('menu-name-input').value = newName;
+            document.getElementById('go-name-input').value = newName;
+
+            let mBox = document.querySelector('.name-setting-box');
+            let gBox = document.querySelector('.go-profile-box');
+            if(mBox) mBox.style.display = 'none';
+            if(gBox) gBox.style.display = 'none';
+
+            alert("Đã cập nhật danh tính!");
+            renderMenuLeaderboard();
+        }
+
+        function savePersonalScore(mode, score) {
+            let pScores = JSON.parse(localStorage.getItem('mm_personal_scores') || '[]');
+            pScores.push({ mode: mode, score: score, date: Date.now() });
+            localStorage.setItem('mm_personal_scores', JSON.stringify(pScores));
+        }
+
+        function getPersonalScoresFiltered(mode, timeframe) {
+            let pScores = JSON.parse(localStorage.getItem('mm_personal_scores') || '[]');
+            let now = Date.now();
+            return pScores.filter(item => {
+                if (item.mode !== mode) return false;
+                if (timeframe === 'week') return (now - item.date) <= 7 * 86400000;
+                if (timeframe === 'month') return (now - item.date) <= 30 * 86400000;
+                return true; 
+            }).sort((a, b) => b.score - a.score);
+        }
+
+        function slowScrollTo(targetId) {
+            const container = document.getElementById('main-scroll');
+            const target = document.getElementById(targetId);
+            if (!container || !target) return;
+            container.style.scrollSnapType = 'none';
+            const start = container.scrollTop;
+            const change = target.offsetTop - start;
+            let startTime = null;
+            function animateScroll(currentTime) {
+                if (!startTime) startTime = currentTime;
+                const t = (currentTime - startTime) / 500;
+                container.scrollTop = (t < 1 ? 0.5*t*t*t : 0.5*((t-2)*(t-2)*(t-2)+2)) * change + start;
+                if (currentTime - startTime < 1000) requestAnimationFrame(animateScroll);
+                else { container.scrollTop = target.offsetTop; container.style.scrollSnapType = 'y mandatory'; }
+            }
+            requestAnimationFrame(animateScroll);
+        }
+
+        function buildLeaderboardHTML(containerId, dataList, isPersonalTable) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            let maxRows = containerId === 'menu-bxh-rows' ? 10 : 6;
+
+            for (let i = 0; i < maxRows; i++) {
+                const rowEl = document.createElement('div');
+                rowEl.classList.add('bxh-row');
+
+                if (i < dataList.length) {
+                    const item = dataList[i];
+                    const displayName = isPersonalTable ? state.playerName : item.n;
+                    if (!isPersonalTable && item.n === state.playerName) rowEl.classList.add('my-row');
+
+                    rowEl.innerHTML = `
+                        <div class="rank-name"><span class="rank-num">#${i + 1}</span><span class="player-name">${displayName}</span></div>
+                        <span class="player-score">${item.s ? item.s.toLocaleString() : item.score.toLocaleString()}đ</span>
+                    `;
+                } else {
+                    rowEl.innerHTML = `
+                        <div class="rank-name"><span class="rank-num">#${i + 1}</span><span class="player-name" style="opacity: 0.25;">--</span></div>
+                        <span class="player-score" style="opacity: 0.25;">--</span>
+                    `;
+                }
+                container.appendChild(rowEl);
+            }
+        }
+
+        async function renderMenuLeaderboard() {
+            let list = [];
+            let isPers = (state.menuTabType === 'personal');
+            if (isPers) {
+                list = getPersonalScoresFiltered(state.menuTabMode, state.menuTabTime);
+            } else {
+                let oData = await fetchLeaderboard(state.menuTabMode, 10);
+                list = oData.length > 0 ? oData : (mockOnlineData[state.menuTabMode][state.menuTabTime] || []);
+            }
+            buildLeaderboardHTML('menu-bxh-rows', list, isPers);
+        }
+
+        async function renderGoLeaderboard() {
+            let list = [];
+            let isPers = (state.goTabType === 'personal');
+            if (isPers) {
+                list = getPersonalScoresFiltered(state.mode, state.goTabTime);
+            } else {
+                let oData = await fetchLeaderboard(state.mode, 6);
+                list = oData.length > 0 ? oData : (mockOnlineData[state.mode][state.goTabTime] || []);
+            }
+            buildLeaderboardHTML('go-bxh-container', list, isPers);
+        }
+
+        document.querySelectorAll('[data-l-type]').forEach(btn => btn.addEventListener('click', (e) => { document.querySelectorAll('[data-l-type]').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); state.menuTabType = e.target.getAttribute('data-l-type'); renderMenuLeaderboard(); }));
+        document.querySelectorAll('[data-l-mode]').forEach(btn => btn.addEventListener('click', (e) => { document.querySelectorAll('[data-l-mode]').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); state.menuTabMode = e.target.getAttribute('data-l-mode'); renderMenuLeaderboard(); }));
+        document.querySelectorAll('[data-l-time]').forEach(btn => btn.addEventListener('click', (e) => { document.querySelectorAll('[data-l-time]').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); state.menuTabTime = e.target.getAttribute('data-l-time'); renderMenuLeaderboard(); }));
+        function switchGoType(type) { state.goTabType = type; document.getElementById('go-tab-personal').classList.toggle('active', type === 'personal'); document.getElementById('go-tab-online').classList.toggle('active', type === 'online'); renderGoLeaderboard(); }
+        function switchGoTime(time) { state.goTabTime = time; document.getElementById('go-time-week').classList.toggle('active', time === 'week'); document.getElementById('go-time-month').classList.toggle('active', time === 'month'); document.getElementById('go-time-all').classList.toggle('active', time === 'all'); renderGoLeaderboard(); }
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            if (type === 'flash' || type === 'correct_click') { osc.type = 'sine'; osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); gain.gain.setValueAtTime(0.08, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.12); osc.start(); osc.stop(audioCtx.currentTime + 0.12); }
+            else if (type === 'flash_dist') { osc.type = 'square'; osc.frequency.setValueAtTime(150, audioCtx.currentTime); gain.gain.setValueAtTime(0.05, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1); osc.start(); osc.stop(audioCtx.currentTime + 0.1); }
+            else if (type === 'wrong_soft') { osc.type = 'sine'; osc.frequency.setValueAtTime(180, audioCtx.currentTime); gain.gain.setValueAtTime(0.1, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1); osc.start(); osc.stop(audioCtx.currentTime + 0.1); }
+            else if (type === 'round_success') { osc.type = 'triangle'; osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.08); osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.16); gain.gain.setValueAtTime(0.12, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35); osc.start(); osc.stop(audioCtx.currentTime + 0.35); }
+            else if (type === 'combo') { osc.type = 'sine'; osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.1); osc.frequency.setValueAtTime(1046.50, audioCtx.currentTime + 0.2); gain.gain.setValueAtTime(0.15, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4); osc.start(); osc.stop(audioCtx.currentTime + 0.4); }
+            else if (type === 'rematch_signal') { osc.type = 'triangle'; osc.frequency.setValueAtTime(220, audioCtx.currentTime); osc.frequency.setValueAtTime(180, audioCtx.currentTime + 0.15); gain.gain.setValueAtTime(0.15, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3); osc.start(); osc.stop(audioCtx.currentTime + 0.3); }
+            else if (type === 'gameover') { osc.type = 'sawtooth'; osc.frequency.setValueAtTime(250, audioCtx.currentTime); osc.frequency.linearRampToValueAtTime(80, audioCtx.currentTime + 0.5); gain.gain.setValueAtTime(0.2, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5); osc.start(); osc.stop(audioCtx.currentTime + 0.5); }
+        }
+
+        const gameScreen = document.getElementById('game-screen');
+        const gridEl = document.getElementById('grid');
+        const levelEl = document.getElementById('level-val');
+        const livesEl = document.getElementById('lives-val');
+        const scoreEl = document.getElementById('score-val');
+        const modeLabelEl = document.getElementById('mode-label');
+        const statusEl = document.getElementById('status');
+        const btnHint = document.getElementById('btn-hint');
+
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => { startGameWithMode(e.target.getAttribute('data-mode')); });
+        });
+
+        function startGameWithMode(modeId) {
+            state.mode = modeId;
+            modeLabelEl.innerText = MODE_NAMES[modeId];
+            let lastLevel = parseInt(localStorage.getItem(`mm_last_level_${modeId}`) || 1);
+            state.level = Math.max(1, lastLevel - (Math.floor(Math.random() * 3) + 2));
+            state.score = 0; state.lives = 3; state.isPlaying = true;
+            document.getElementById('gameover-overlay').style.display = 'none';
+            gameScreen.style.display = 'flex';
+            updateUI();
+            setTimeout(() => { startRound(); }, 500);
+        }
+
+        function createGrid() {
+            gridEl.innerHTML = ''; gridEl.className = 'grid-container';
+            gridEl.style.gridTemplateColumns = `repeat(${state.gridSize}, 1fr)`;
+            gridEl.style.gridTemplateRows = `repeat(${state.gridSize}, 1fr)`;
+            for (let i = 0; i < state.gridSize * state.gridSize; i++) {
+                const tile = document.createElement('div'); tile.classList.add('tile');
+                tile.dataset.index = i; tile.addEventListener('click', () => handleTileClick(i, tile));
+                gridEl.appendChild(tile);
+            }
+        }
+
+        function updateDifficulty() {
+            state.gridSize = Math.min(3 + Math.floor((state.level - 1) / 3), 8);
+            state.tilesToRemember = 2 + state.level;
+        }
+
+        function startRound() {
+            state.userCorrectCount = 0; state.wrongClicksInRound = 0; state.isShowingPattern = true; state.firstClickTime = null; state.hintUsedInRound = false; btnHint.disabled = false;
+            updateDifficulty(); createGrid();
+            state.sequence = [];
+            let indices = Array.from({length: state.gridSize * state.gridSize}, (_, i) => i);
+            for (let i = 0; i < state.tilesToRemember; i++) {
+                const r = Math.floor(Math.random() * indices.length); state.sequence.push(indices[r]); indices.splice(r, 1);
+            }
+            statusEl.innerText = "Ghi nhớ...";
+            const tiles = document.querySelectorAll('.tile');
+            const flashDuration = Math.max(1000, state.tilesToRemember * 250);
+
+            if (state.mode === 'seq') {
+                statusEl.innerText = "Ghi nhớ chính xác THỨ TỰ...";
+                state.sequence.forEach((index, i) => { setTimeout(() => { tiles[index].classList.add('flash'); playSound('flash'); setTimeout(() => tiles[index].classList.remove('flash'), 500); }, 400 + i * 800); });
+                setTimeout(() => { state.isShowingPattern = false; statusEl.innerText = "Bấm lại theo đúng thứ tự!"; }, 400 + state.sequence.length * 800 + 200);
+            } else if (state.mode === 'color') {
+                statusEl.innerText = "Nhớ vị trí: TRẮNG trước, VÀNG sau!";
+                state.seqA = state.sequence.slice(0, Math.ceil(state.sequence.length / 2)); state.seqB = state.sequence.slice(Math.ceil(state.sequence.length / 2));
+                setTimeout(() => {
+                    state.seqA.forEach(idx => tiles[idx].classList.add('flash')); state.seqB.forEach(idx => tiles[idx].classList.add('flash-b')); playSound('flash');
+                    setTimeout(() => { tiles.forEach(t => { t.classList.remove('flash'); t.classList.remove('flash-b'); }); state.isShowingPattern = false; statusEl.innerText = "Hãy tìm tất cả ô TRẮNG trước!"; }, flashDuration);
+                }, 400);
+            } else {
+                setTimeout(() => {
+                    state.sequence.forEach(idx => tiles[idx].classList.add('flash')); playSound('flash');
+                    setTimeout(() => {
+                        tiles.forEach(t => t.classList.remove('flash'));
+                        if (state.mode === 'rot') { gridEl.classList.add('rotate-90'); statusEl.innerText = "Ma trận đã xoay! Mời chọn lại."; }
+                        else if (state.mode === 'dist') {
+                            statusEl.innerText = "Nhiễu sóng...";
+                            let rem = [...indices]; for (let i = rem.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [rem[i], rem[j]] = [rem[j], rem[i]]; }
+                            let free = rem.slice(0, Math.min(3 + Math.floor(state.level / 2), 10));
+                            free.forEach(idx => tiles[idx].classList.add('flash-dist')); playSound('flash_dist');
+                            setTimeout(() => { free.forEach(idx => tiles[idx].classList.remove('flash-dist')); statusEl.innerText = "Mời chọn lại các ô TRẮNG."; state.isShowingPattern = false; }, 500);
+                        } else { statusEl.innerText = "Mời bạn chọn lại các ô!"; }
+                        state.isShowingPattern = false;
+                    }, flashDuration);
+                }, 400);
+            }
+        }
+
+        btnHint.addEventListener('click', () => {
+            if (!state.isPlaying || state.isShowingPattern || state.hintUsedInRound) return;
+            if (state.lives <= 1) { statusEl.innerText = "Cảnh báo: Không đủ mạng!"; return; }
+            state.lives -= 1; state.hintUsedInRound = true; state.isShowingPattern = true; btnHint.disabled = true; updateUI();
+            const tiles = document.querySelectorAll('.tile');
+            state.sequence.forEach(idx => {
+                if (!tiles[idx].classList.contains('correct') && !tiles[idx].classList.contains('correct-b')) {
+                    if (state.mode === 'color') { if (state.seqA.includes(idx)) tiles[idx].classList.add('flash'); if (state.seqB.includes(idx)) tiles[idx].classList.add('flash-b'); } 
+                    else tiles[idx].classList.add('flash');
+                }
+            });
+            playSound('flash');
+            setTimeout(() => { tiles.forEach(t => { t.classList.remove('flash'); t.classList.remove('flash-b'); }); state.isShowingPattern = false; statusEl.innerText = "Tiếp tục chơi!"; }, 500);
+        });
+
+        function handleTileClick(index, tileElement) {
+            if (state.isShowingPattern || !state.isPlaying) return;
+            if (tileElement.classList.contains('correct') || tileElement.classList.contains('correct-b') || tileElement.classList.contains('wrong')) return;
+
+            if (state.userCorrectCount === 0) state.firstClickTime = Date.now();
+            let isCorrect = false; let customErr = "";
+
+            if (state.mode === 'seq') {
+                if (index === state.sequence[state.userCorrectCount]) isCorrect = true; else customErr = "Sai thứ tự rồi!";
+            } else if (state.mode === 'color') {
+                if (state.seqA.includes(index)) { isCorrect = true; tileElement.classList.add('correct'); }
+                else if (state.seqB.includes(index)) {
+                    if (state.userCorrectCount < state.seqA.length) customErr = "Tìm hết ô Trắng trước!";
+                    else { isCorrect = true; tileElement.classList.add('correct-b'); }
+                }
+            } else { if (state.sequence.includes(index)) isCorrect = true; }
+
+            if (isCorrect) {
+                if(state.mode !== 'color') tileElement.classList.add('correct');
+                state.userCorrectCount++; playSound('correct_click');
+                if (state.mode === 'color' && state.userCorrectCount === state.seqA.length) statusEl.innerText = "Chuẩn! Giờ tìm các ô VÀNG.";
+                if (state.userCorrectCount === state.sequence.length) {
+                    state.isPlaying = false;
+                    let isCombo = state.firstClickTime && (Date.now() - state.firstClickTime <= 2000);
+                    let bonus = state.level * 100; if (state.wrongClicksInRound > 0) bonus = Math.floor(bonus / 2);
+                    if (isCombo) { bonus *= 2; playSound('combo'); statusEl.innerHTML = `⚡ COMBO SPEED X2! ⚡`; }
+                    else { playSound('round_success'); statusEl.innerText = `Qua màn!`; }
+                    state.score += bonus; state.level += 1; updateUI();
+                    setTimeout(() => { state.isPlaying = true; startRound(); }, 1500);
+                }
+            } else {
+                tileElement.classList.add('wrong'); state.wrongClicksInRound++;
+                if (state.wrongClicksInRound <= 2) { playSound('wrong_soft'); statusEl.innerText = customErr || `Nhầm rồi! (${state.wrongClicksInRound}/2)`; }
+                else if (state.wrongClicksInRound === 3) {
+                    state.isPlaying = false; playSound('rematch_signal'); state.lives -= 1; updateUI();
+                    if (state.lives <= 0) handleGameOver(); else { statusEl.innerText = "Tạo lại ma trận mới..."; setTimeout(() => { state.isPlaying = true; startRound(); }, 1800); }
+                } else {
+                    state.isPlaying = false; playSound('wrong_soft'); state.lives -= 1; state.level = Math.max(1, state.level - 1); updateUI();
+                    if (state.lives <= 0) handleGameOver(); else { statusEl.innerText = "Bị hạ xuống 1 Level."; setTimeout(() => { state.isPlaying = true; startRound(); }, 1800); }
+                }
+            }
+        }
+
+        async function handleGameOver() {
+            playSound('gameover');
+            state.isPlaying = false;
+            localStorage.setItem(`mm_last_level_${state.mode}`, state.level);
+            
+            savePersonalScore(state.mode, state.score);
+
+            if (state.score > 0) {
+                // Sử dụng await để đảm bảo điểm đẩy lên máy chủ rồi mới render Bảng Xếp Hạng
+                await saveHighScore(state.playerName, state.score, state.mode);
+            }
+
+            document.getElementById('go-mode-reached').innerText = `Chế độ: ${MODE_NAMES[state.mode]} — Màn: ${state.level}`;
+            document.getElementById('go-score-final').innerText = `${state.score.toLocaleString()}đ`;
+            
+            state.goTabType = 'online'; 
+            state.goTabTime = 'month';  
+            
+            document.getElementById('go-tab-online').classList.add('active'); 
+            document.getElementById('go-tab-personal').classList.remove('active');
+            document.getElementById('go-time-week').classList.remove('active'); 
+            document.getElementById('go-time-month').classList.add('active'); 
+            document.getElementById('go-time-all').classList.remove('active');
+
+            await renderGoLeaderboard();
+            document.getElementById('gameover-overlay').style.display = 'flex';
+        }
+
+        function quitToMenu() {
+            document.getElementById('gameover-overlay').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'none';
+            renderMenuLeaderboard(); slowScrollTo('menu-screen');
+        }
+
+        function updateUI() { 
+            document.getElementById('level-val').innerText = state.level; 
+            document.getElementById('lives-val').innerText = state.lives; 
+            document.getElementById('score-val').innerText = state.score; 
+        }
+
+        initPlayerProfile();
+        renderMenuLeaderboard();
+    </script>
+</body>
+</html>
+</html>
