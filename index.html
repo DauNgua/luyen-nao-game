@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Memory Matrix Pro V6.0 - Ultimate Leaderboard & Profile Edition</title>
+    <title>Memory Matrix Pro V6.1 - Ultimate Leaderboard & Profile Edition</title>
     <link rel="manifest" href="./manifest.json">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -374,6 +374,66 @@
         }
 
         #go-bxh-container { height: 260px; } /* Thu nhỏ một chút để vừa màn hình overlay */
+
+
+        /* --- NÚT TẠM DỪNG TRÊN HEADER --- */
+        .btn-pause {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            border-radius: 15px;
+            padding: 4px 12px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+        .btn-pause:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+        .btn-pause.disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        /* --- MÀN HÌNH PAUSE OVERLAY --- */
+        .pause-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            /* Phủ nền tối và làm mờ để chống gian lận */
+            background: rgba(17, 22, 70, 0.95);
+            backdrop-filter: blur(8px);
+            z-index: 150; /* Dưới Gameover overlay nhưng trên game */
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .pause-title {
+            font-size: 32px;
+            font-weight: 900;
+            color: white;
+            letter-spacing: 2px;
+            margin-bottom: 30px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+        .pause-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 80%;
+            max-width: 250px;
+        }
+        .btn-resume {
+            background-color: var(--tile-normal); 
+            color: white;
+        }
+        .btn-quit {
+            background-color: var(--tile-dist);
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -437,7 +497,17 @@
     <div id="game-screen">
         <div class="header">
             <div>Màn: <span id="level-val">1</span></div>
+             <!-- NÚT PAUSE ĐƯỢC THÊM VÀO GIỮA -->
+            <button id="btn-pause" class="btn-pause" onclick="pauseGame()">⏸ Tạm Dừng</button>
             <div>Mạng: <span id="lives-val">3</span></div>
+        </div>
+        <!-- OVERLAY TẠM DỪNG -->
+        <div id="pause-overlay" class="pause-overlay">
+            <div class="pause-title">TẠM DỪNG</div>
+            <div class="pause-buttons">
+                <button class="btn btn-resume" onclick="resumeGame()">Chơi Tiếp</button>
+                <button class="btn btn-quit" onclick="quitFromPause()">Về Menu Chính</button>
+            </div>
         </div>
         <div class="score-board">
             <h1 id="score-val">0</h1>
@@ -498,16 +568,82 @@
         }
         initAuth();
 
+        // ==========================================
+        // ĐẦU KHỐI: CƠ CHẾ GỬI ĐIỂM CHỐNG TRÙNG LẶP & TỰ ĐỘNG ĐỒNG BỘ ONLINE
+
+        // 1. Hàm lưu điểm thông minh (Tránh tạo 2 dòng trên Supabase)
         async function saveHighScore(playerName, score, mode) {
             if (!window.supabaseClient) return;
             const { data: { user } } = await window.supabaseClient.auth.getUser();
             if (!user) return;
-            const { error } = await window.supabaseClient.from('leaderboard').insert([
-                { user_id: user.id, player_name: playerName, score: score, mode: mode }
-            ]);
-            if (error) console.error("Lỗi gửi điểm:", error.message);
+
+            // LƯU ĐỆM VÀO MÁY: Để phòng khi đang chơi mà mất mạng, lát vào lại game tự gửi lên
+            let bestOffline = JSON.parse(localStorage.getItem('mm_best_offline_score') || '{}');
+            if (!bestOffline[mode] || score > bestOffline[mode]) {
+                bestOffline[mode] = score;
+                localStorage.setItem('mm_best_offline_score', JSON.stringify(bestOffline));
+            }
+
+            try {
+                // KIỂM TRA MÁY CHỦ: Xem tài khoản này ở chế độ này đã có điểm trên Database chưa?
+                const { data: existingRecord, error: fetchErr } = await window.supabaseClient
+                    .from('leaderboard')
+                    .select('id, score')
+                    .eq('user_id', user.id)
+                    .eq('mode', mode)
+                    .limit(1);
+
+                if (fetchErr) throw fetchErr;
+
+                if (existingRecord && existingRecord.length > 0) {
+                    // NẾU ĐÃ CÓ DATA TRÊN MÁY CHỦ -> Chỉ cập nhật khi điểm MỚI > điểm CŨ
+                    let serverScore = existingRecord[0].score;
+                    if (score > serverScore) {
+                        await window.supabaseClient
+                            .from('leaderboard')
+                            .update({ score: score, player_name: playerName, updated_at: new Date() })
+                            .eq('user_id', user.id)
+                            .eq('mode', mode);
+                        console.log("Cập nhật thành tích mới: Kỷ lục cũ bị phá vỡ!");
+                    } else {
+                        console.log("Thành tích này chưa vược qua kỷ lục của chính bạn trên Server. (Bỏ qua lưu)");
+                    }
+                } else {
+                    // NẾU CHƯA TỪNG CÓ TÊN -> Thêm 1 dòng mới tinh vào CSDL
+                    await window.supabaseClient
+                        .from('leaderboard')
+                        .insert([{ user_id: user.id, player_name: playerName, score: score, mode: mode }]);
+                    console.log("Đã ghi danh người chơi mới lên Cloud!");
+                }
+            } catch (err) {
+                console.error("Lỗi giao tiếp Server, sẽ thử lại sau:", err.message);
+            }
         }
 
+        // 2. Cơ chế Background Sync (Tự động tải điểm từ máy lên Server khi Mở Game / Có Mạng lại)
+        async function syncOfflineScoresToServer() {
+            // Không chạy nếu mất mạng
+            if (!navigator.onLine || !window.supabaseClient) return; 
+
+            let bestOffline = JSON.parse(localStorage.getItem('mm_best_offline_score') || '{}');
+            let currentPlayerName = localStorage.getItem('mm_player_name');
+            if (!currentPlayerName || Object.keys(bestOffline).length === 0) return;
+
+            // Quét và gửi ngầm mọi kỷ lục của mọi chế độ có trên thiết bị lên Database
+            for (let modeKey in bestOffline) {
+                await saveHighScore(currentPlayerName, bestOffline[modeKey], modeKey);
+            }
+            
+            // Tải lại Menu bảng xếp hạng (làm mới UI) để phản ánh điểm đã đồng bộ
+            if (typeof renderMenuLeaderboard === 'function') renderMenuLeaderboard();
+        }
+
+        // Bắt sự kiện: Vừa tải xong trình duyệt (cho Delay 2.5s để chờ Auth xong)
+        setTimeout(syncOfflineScoresToServer, 2500); 
+        // Bắt sự kiện: Máy người dùng vừa bắt được wifi/mạng lại
+        window.addEventListener('online', syncOfflineScoresToServer); 
+
+        // 3. Hàm tải BXH từ Database
         async function fetchLeaderboard(mode, limit = 10) {
             if (!window.supabaseClient) return [];
             const { data, error } = await window.supabaseClient
@@ -519,11 +655,14 @@
             if (error) { console.error("Lỗi tải BXH:", error.message); return []; }
             return data.map(item => ({ n: item.player_name, s: item.score }));
         }
+        
+        // HẾT KHỐI: CƠ CHẾ GỬI ĐIỂM CHỐNG TRÙNG LẶP & TỰ ĐỘNG ĐỒNG BỘ ONLINE
+        // ==========================================
 
         const state = {
             mode: 'classic', level: 1, score: 0, lives: 3, gridSize: 3, tilesToRemember: 3,
             sequence: [], seqA: [], seqB: [], userCorrectCount: 0, wrongClicksInRound: 0,
-            isShowingPattern: false, isPlaying: false, firstClickTime: null, hintUsedInRound: false,
+            isShowingPattern: false, isPlaying: false, firstClickTime: null, hintUsedInRound: false, isPaused: false,
             playerName: '',
             menuTabType: 'online', menuTabMode: 'classic', menuTabTime: 'month',
             goTabType: 'online', goTabTime: 'month'
@@ -772,7 +911,7 @@
         }
 
         btnHint.addEventListener('click', () => {
-            if (!state.isPlaying || state.isShowingPattern || state.hintUsedInRound) return;
+            if (!state.isPlaying || state.isShowingPattern || state.hintUsedInRound || state.isPaused) return;
             if (state.lives <= 1) { statusEl.innerText = "Cảnh báo: Không đủ mạng!"; return; }
             state.lives -= 1; state.hintUsedInRound = true; state.isShowingPattern = true; btnHint.disabled = true; updateUI();
             const tiles = document.querySelectorAll('.tile');
@@ -786,8 +925,8 @@
             setTimeout(() => { tiles.forEach(t => { t.classList.remove('flash'); t.classList.remove('flash-b'); }); state.isShowingPattern = false; statusEl.innerText = "Tiếp tục chơi!"; }, 500);
         });
 
-        function handleTileClick(index, tileElement) {
-            if (state.isShowingPattern || !state.isPlaying) return;
+       function handleTileClick(index, tileElement) {
+            if (state.isShowingPattern || !state.isPlaying || state.isPaused) return;
             if (tileElement.classList.contains('correct') || tileElement.classList.contains('correct-b') || tileElement.classList.contains('wrong')) return;
 
             if (state.userCorrectCount === 0) state.firstClickTime = Date.now();
@@ -868,6 +1007,36 @@
             document.getElementById('lives-val').innerText = state.lives; 
             document.getElementById('score-val').innerText = state.score; 
         }
+
+         // ==========================================
+        // CƠ CHẾ TẠM DỪNG (PAUSE)
+        // ==========================================
+        const btnPauseEl = document.getElementById('btn-pause');
+        
+        function pauseGame() {
+            // Bỏ chặn, chỉ cần trong game là được bấm Tạm dừng
+            if (!state.isPlaying || state.isPaused) {
+                return;
+            }
+            state.isPaused = true;
+            document.getElementById('pause-overlay').style.display = 'flex';
+        }
+
+        function resumeGame() {
+            state.isPaused = false;
+            document.getElementById('pause-overlay').style.display = 'none';
+        }
+
+        function quitFromPause() {
+            state.isPaused = false;
+            state.isPlaying = false; 
+            document.getElementById('pause-overlay').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'none';
+            
+            renderMenuLeaderboard(); 
+            slowScrollTo('menu-screen');
+        }
+
 
         initPlayerProfile();
         renderMenuLeaderboard();
