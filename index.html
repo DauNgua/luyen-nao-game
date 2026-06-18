@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Memory Matrix Pro V6.6 - Ultimate Edition</title>
+    <title>Memory Matrix Pro V6.1 - Ultimate Leaderboard & Profile Edition</title>
     <link rel="manifest" href="./manifest.json">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -173,6 +173,7 @@
             width: 100%;
         }
         
+        /* Loại BXH: Trực tuyến vs Cá nhân */
         .type-row .tab-btn {
             background: rgba(0, 0, 0, 0.3);
             font-size: 13px;
@@ -206,7 +207,7 @@
 
         .bxh-container {
             width: 90%;
-            background: rgba(0, 0, 0, 0.25); /* Sửa lỗi màu nền */
+            background: rgba(0, 0, 0, 0.2.5);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 12px;
             padding: 8px;
@@ -372,7 +373,8 @@
             padding: 6px 10px; border-radius: 6px; color: white; font-weight: bold; text-align: center; outline: none;
         }
 
-        #go-bxh-container { height: 260px; }
+        #go-bxh-container { height: 260px; } /* Thu nhỏ một chút để vừa màn hình overlay */
+
 
         /* --- NÚT TẠM DỪNG TRÊN HEADER --- */
         .btn-pause {
@@ -399,9 +401,10 @@
         .pause-overlay {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
+            /* Phủ nền tối và làm mờ để chống gian lận */
             background: rgba(17, 22, 70, 0.95);
             backdrop-filter: blur(8px);
-            z-index: 150;
+            z-index: 150; /* Dưới Gameover overlay nhưng trên game */
             display: none;
             flex-direction: column;
             justify-content: center;
@@ -438,7 +441,8 @@
     <div class="scroll-container" id="main-scroll">
         
         <div id="menu-screen" class="screen-section">
-            <div class="menu-title">Memory<br>Matrix</div>
+            <!-- Tiêu đề -->
+            <div class="menu-title">Memory<br>Matrix v6.1</div>
             <div class="menu-desc">Chọn chế độ để kiểm tra giới hạn não bộ</div>
 
             <div class="menu-buttons">
@@ -458,7 +462,7 @@
         <div id="leaderboard-screen" class="screen-section">
             <div class="bxh-title">🏆 CAO THỦ MATRIX 🏆</div>
             
-            <div class="name-setting-box" id="menu-name-setting">
+            <div class="name-setting-box">
                 <span class="name-label">Danh tính:</span>
                 <input type="text" id="menu-name-input" class="name-input" placeholder="Nhập danh tính của bạn..." maxlength="20">
                 <button class="btn-save-name" onclick="savePlayerName('menu')">Lưu</button>
@@ -484,8 +488,7 @@
             </div>
 
             <div class="bxh-container" id="menu-bxh-rows">
-                <!-- Nội dung sẽ được render bằng JS -->
-            </div>
+                </div>
 
             <button class="btn-up-arrow" onclick="slowScrollTo('menu-screen')">▲ Quay Lại Menu</button>
         </div>
@@ -495,10 +498,11 @@
     <div id="game-screen">
         <div class="header">
             <div>Màn: <span id="level-val">1</span></div>
+             <!-- NÚT PAUSE ĐƯỢC THÊM VÀO GIỮA -->
             <button id="btn-pause" class="btn-pause" onclick="pauseGame()">⏸ Tạm Dừng</button>
             <div>Mạng: <span id="lives-val">3</span></div>
         </div>
-        
+        <!-- OVERLAY TẠM DỪNG -->
         <div id="pause-overlay" class="pause-overlay">
             <div class="pause-title">TẠM DỪNG</div>
             <div class="pause-buttons">
@@ -506,14 +510,11 @@
                 <button class="btn btn-quit" onclick="quitFromPause()">Về Menu Chính</button>
             </div>
         </div>
-        
         <div class="score-board">
             <h1 id="score-val">0</h1>
             <p id="mode-label">Chế độ</p>
         </div>
-        
         <div id="grid" class="grid-container"></div>
-        
         <div class="footer">
             <div id="status" class="status-text">Đang chuẩn bị...</div>
             <button id="btn-hint" class="btn btn-hint">Gợi ý (-1 Mạng)</button>
@@ -524,7 +525,7 @@
             <div class="go-stat" id="go-mode-reached">Chế độ: Cổ Điển - Màn đạt được: 1</div>
             <div class="go-score" id="go-score-final">0đ</div>
 
-            <div class="go-profile-box" id="go-profile-box">
+            <div class="go-profile-box">
                 <p id="go-record-alert">Ghi danh bảng vàng thành tích này:</p>
                 <div class="go-input-container">
                     <input type="text" id="go-name-input" class="go-name-input" placeholder="Tên của bạn..." maxlength="20">
@@ -552,14 +553,14 @@
 
     <script>
         // ==========================================
-        // 1. CẤU HÌNH SUPABASE & ĐĂNG NHẬP
-        // ==========================================
+        // ĐẦU KHỐI: CORE SYSTEM VÀ DATABASE SUPABASE (V7.3)
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('./sw.js').catch(err => console.log("SW Register failed (bỏ qua nếu test local)"));
         }
 
         window.SUPABASE_URL = 'https://zyymowgbbxpsrkoxomoj.supabase.co';
         window.SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp5eW1vd2diYnhwc3Jrb3hvbW9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3MDAyOTUsImV4cCI6MjA5NzI3NjI5NX0.hgDtLVQT8ZzsGnFfrQdSLzOaJbHLuaKnXl0NMQGEpWs';
+        
         window.supabaseClient = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
 
         async function initAuth() {
@@ -569,8 +570,96 @@
         initAuth();
 
         // ==========================================
-        // 2. KHAI BÁO TRẠNG THÁI & DỮ LIỆU
+        // ĐẦU KHỐI: CƠ CHẾ GỬI ĐIỂM CHỐNG TRÙNG LẶP & TỰ ĐỘNG ĐỒNG BỘ ONLINE
+
+        // 1. Hàm lưu điểm thông minh (Tránh tạo 2 dòng trên Supabase)
+        async function saveHighScore(playerName, score, mode) {
+            if (!window.supabaseClient) return;
+            const { data: { user } } = await window.supabaseClient.auth.getUser();
+            if (!user) return;
+
+            // LƯU ĐỆM VÀO MÁY: Để phòng khi đang chơi mà mất mạng, lát vào lại game tự gửi lên
+            let bestOffline = JSON.parse(localStorage.getItem('mm_best_offline_score') || '{}');
+            if (!bestOffline[mode] || score > bestOffline[mode]) {
+                bestOffline[mode] = score;
+                localStorage.setItem('mm_best_offline_score', JSON.stringify(bestOffline));
+            }
+
+            try {
+                // KIỂM TRA MÁY CHỦ: Xem tài khoản này ở chế độ này đã có điểm trên Database chưa?
+                const { data: existingRecord, error: fetchErr } = await window.supabaseClient
+                    .from('leaderboard')
+                    .select('id, score')
+                    .eq('user_id', user.id)
+                    .eq('mode', mode)
+                    .limit(1);
+
+                if (fetchErr) throw fetchErr;
+
+                if (existingRecord && existingRecord.length > 0) {
+                    // NẾU ĐÃ CÓ DATA TRÊN MÁY CHỦ -> Chỉ cập nhật khi điểm MỚI > điểm CŨ
+                    let serverScore = existingRecord[0].score;
+                    if (score > serverScore) {
+                        await window.supabaseClient
+                            .from('leaderboard')
+                            .update({ score: score, player_name: playerName, updated_at: new Date() })
+                            .eq('user_id', user.id)
+                            .eq('mode', mode);
+                        console.log("Cập nhật thành tích mới: Kỷ lục cũ bị phá vỡ!");
+                    } else {
+                        console.log("Thành tích này chưa vược qua kỷ lục của chính bạn trên Server. (Bỏ qua lưu)");
+                    }
+                } else {
+                    // NẾU CHƯA TỪNG CÓ TÊN -> Thêm 1 dòng mới tinh vào CSDL
+                    await window.supabaseClient
+                        .from('leaderboard')
+                        .insert([{ user_id: user.id, player_name: playerName, score: score, mode: mode }]);
+                    console.log("Đã ghi danh người chơi mới lên Cloud!");
+                }
+            } catch (err) {
+                console.error("Lỗi giao tiếp Server, sẽ thử lại sau:", err.message);
+            }
+        }
+
+        // 2. Cơ chế Background Sync (Tự động tải điểm từ máy lên Server khi Mở Game / Có Mạng lại)
+        async function syncOfflineScoresToServer() {
+            // Không chạy nếu mất mạng
+            if (!navigator.onLine || !window.supabaseClient) return; 
+
+            let bestOffline = JSON.parse(localStorage.getItem('mm_best_offline_score') || '{}');
+            let currentPlayerName = localStorage.getItem('mm_player_name');
+            if (!currentPlayerName || Object.keys(bestOffline).length === 0) return;
+
+            // Quét và gửi ngầm mọi kỷ lục của mọi chế độ có trên thiết bị lên Database
+            for (let modeKey in bestOffline) {
+                await saveHighScore(currentPlayerName, bestOffline[modeKey], modeKey);
+            }
+            
+            // Tải lại Menu bảng xếp hạng (làm mới UI) để phản ánh điểm đã đồng bộ
+            if (typeof renderMenuLeaderboard === 'function') renderMenuLeaderboard();
+        }
+
+        // Bắt sự kiện: Vừa tải xong trình duyệt (cho Delay 2.5s để chờ Auth xong)
+        setTimeout(syncOfflineScoresToServer, 2500); 
+        // Bắt sự kiện: Máy người dùng vừa bắt được wifi/mạng lại
+        window.addEventListener('online', syncOfflineScoresToServer); 
+
+        // 3. Hàm tải BXH từ Database
+        async function fetchLeaderboard(mode, limit = 10) {
+            if (!window.supabaseClient) return [];
+            const { data, error } = await window.supabaseClient
+                .from('leaderboard')
+                .select('player_name, score')
+                .eq('mode', mode)
+                .order('score', { ascending: false })
+                .limit(limit);
+            if (error) { console.error("Lỗi tải BXH:", error.message); return []; }
+            return data.map(item => ({ n: item.player_name, s: item.score }));
+        }
+        
+        // HẾT KHỐI: CƠ CHẾ GỬI ĐIỂM CHỐNG TRÙNG LẶP & TỰ ĐỘNG ĐỒNG BỘ ONLINE
         // ==========================================
+
         const state = {
             mode: 'classic', level: 1, score: 0, lives: 3, gridSize: 3, tilesToRemember: 3,
             sequence: [], seqA: [], seqB: [], userCorrectCount: 0, wrongClicksInRound: 0,
@@ -582,7 +671,7 @@
 
         const MODE_NAMES = { classic: 'Cổ Điển', seq: 'Nhớ Thứ Tự', dist: 'Chống Nhiễu', rot: 'Xoay Ma Trận', color: 'Đa Sắc' };
 
-        // Dữ liệu dự phòng khi mất mạng
+        // Dữ liệu dự phòng (Không được xóa để chống Crash)
         const mockOnlineData = {
             classic: { week: [], month: [], all: [] },
             seq: { week: [], month: [], all: [] },
@@ -591,9 +680,6 @@
             color: { week: [], month: [], all: [] }
         };
 
-        // ==========================================
-        // 3. HỆ THỐNG HỒ SƠ (PROFILE)
-        // ==========================================
         function initPlayerProfile() {
             let savedName = localStorage.getItem('mm_player_name');
             let hasSetName = localStorage.getItem('mm_has_set_name');
@@ -603,26 +689,20 @@
                 localStorage.setItem('mm_player_name', savedName);
             }
             state.playerName = savedName;
-            
-            const menuInput = document.getElementById('menu-name-input');
-            const goInput = document.getElementById('go-name-input');
-            if (menuInput) menuInput.value = savedName;
-            if (goInput) goInput.value = savedName;
+            document.getElementById('menu-name-input').value = savedName;
+            document.getElementById('go-name-input').value = savedName;
 
             // Ẩn thanh nhập tên nếu đã từng bấm lưu
             if (hasSetName === 'true') {
-                const mBox = document.getElementById('menu-name-setting');
-                const gBox = document.getElementById('go-profile-box');
-                if (mBox) mBox.style.display = 'none';
-                if (gBox) gBox.style.display = 'none';
+                let mBox = document.querySelector('.name-setting-box');
+                let gBox = document.querySelector('.go-profile-box');
+                if(mBox) mBox.style.display = 'none';
+                if(gBox) gBox.style.display = 'none';
             }
         }
 
         function savePlayerName(source) {
-            let newName = source === 'menu' 
-                ? document.getElementById('menu-name-input').value.trim() 
-                : document.getElementById('go-name-input').value.trim();
-                
+            let newName = source === 'menu' ? document.getElementById('menu-name-input').value.trim() : document.getElementById('go-name-input').value.trim();
             if (newName === "") return alert("Tên không được để trống!");
 
             state.playerName = newName;
@@ -632,17 +712,15 @@
             document.getElementById('menu-name-input').value = newName;
             document.getElementById('go-name-input').value = newName;
 
-            document.getElementById('menu-name-setting').style.display = 'none';
-            document.getElementById('go-profile-box').style.display = 'none';
+            let mBox = document.querySelector('.name-setting-box');
+            let gBox = document.querySelector('.go-profile-box');
+            if(mBox) mBox.style.display = 'none';
+            if(gBox) gBox.style.display = 'none';
 
             alert("Đã cập nhật danh tính!");
             renderMenuLeaderboard();
         }
 
-        // ==========================================
-        // 4. HỆ THỐNG LƯU ĐIỂM THÔNG MINH (LOCAL, TIME-BOUND & SUPABASE) V6.7
-        // ==========================================
-        
         function savePersonalScore(mode, score) {
             let pScores = JSON.parse(localStorage.getItem('mm_personal_scores') || '[]');
             pScores.push({ mode: mode, score: score, date: Date.now() });
@@ -660,158 +738,26 @@
             }).sort((a, b) => b.score - a.score);
         }
 
-        // Tiện ích lấy chuỗi định danh Tuần/Tháng hiện tại
-        function getCurrentTimeLabels() {
-            let now = new Date();
-            let year = now.getFullYear();
-            let month = String(now.getMonth() + 1).padStart(2, '0');
-            // Tính số tuần trong năm (Công thức ISO cơ bản)
-            let d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
-            let dayNum = d.getUTCDay() || 7; d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-            let yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
-            let weekNo = Math.ceil((((d - yearStart) / 86400000) + 1)/7);
-            
-            return { monthLabel: `${year}-${month}`, weekLabel: `${year}-W${weekNo}` };
-        }
-
-        // LỚP 1 & LỚP 2: Lọc Kỷ lục Cá nhân theo 3 Mốc thời gian
-        function updateLocalBestScores(mode, score) {
-            let bestData = JSON.parse(localStorage.getItem('mm_best_offline_score') || '{}');
-            if (!bestData[mode]) bestData[mode] = { all_time: 0, month: { label: '', score: 0 }, week: { label: '', score: 0 }, need_sync: false };
-            
-            let mData = bestData[mode];
-            let { monthLabel, weekLabel } = getCurrentTimeLabels();
-            let isNewRecord = false;
-
-            // Reset Tháng nếu sang tháng mới
-            if (mData.month.label !== monthLabel) { mData.month.label = monthLabel; mData.month.score = 0; }
-            // Reset Tuần nếu sang tuần mới
-            if (mData.week.label !== weekLabel) { mData.week.label = weekLabel; mData.week.score = 0; }
-
-            // Kiểm tra: Có phá kỷ lục nào không?
-            if (score > mData.all_time) { mData.all_time = score; isNewRecord = true; }
-            if (score > mData.month.score) { mData.month.score = score; isNewRecord = true; }
-            if (score > mData.week.score) { mData.week.score = score; isNewRecord = true; }
-
-            if (isNewRecord) {
-                mData.need_sync = true; // Bật Cờ Hiệu cần đồng bộ
-                localStorage.setItem('mm_best_offline_score', JSON.stringify(bestData));
+        function slowScrollTo(targetId) {
+            const container = document.getElementById('main-scroll');
+            const target = document.getElementById(targetId);
+            if (!container || !target) return;
+            container.style.scrollSnapType = 'none';
+            const start = container.scrollTop;
+            const change = target.offsetTop - start;
+            let startTime = null;
+            function animateScroll(currentTime) {
+                if (!startTime) startTime = currentTime;
+                const t = (currentTime - startTime) / 500;
+                container.scrollTop = (t < 1 ? 0.5*t*t*t : 0.5*((t-2)*(t-2)*(t-2)+2)) * change + start;
+                if (currentTime - startTime < 1000) requestAnimationFrame(animateScroll);
+                else { container.scrollTop = target.offsetTop; container.style.scrollSnapType = 'y mandatory'; }
             }
-            return isNewRecord; // Trả về true nếu có phá kỷ lục, false nếu điểm thấp (Lọc 95% request)
+            requestAnimationFrame(animateScroll);
         }
 
-        // LỚP 3: Đồng bộ trạng thái cuối (State-based Sync)
-        async function saveHighScore(playerName, score, mode) {
-            // 1. Chạy qua màng lọc Offline-First
-            let shouldSync = updateLocalBestScores(mode, score);
-            
-            // 2. Nếu điểm cùi bắp hoặc không có mạng -> Hủy lệnh gửi, bảo vệ băng thông!
-            if (!shouldSync || !navigator.onLine || !window.supabaseClient) return;
-
-            // 3. Nếu phá kỷ lục VÀ có mạng -> Bắt đầu quá trình đồng bộ State
-            await processSyncQueue(playerName);
-        }
-
-        // Hàm xử lý "Gom Đơn" và Đẩy lên Server (Dùng chung cho cả lúc Game Over lẫn lúc Mở Mạng)
-        async function processSyncQueue(playerName) {
-            if (!navigator.onLine || !window.supabaseClient) return;
-            const { data: { user } } = await window.supabaseClient.auth.getUser();
-            if (!user) return;
-
-            let bestData = JSON.parse(localStorage.getItem('mm_best_offline_score') || '{}');
-            let hasChanges = false;
-
-            for (let modeKey in bestData) {
-                let mData = bestData[modeKey];
-                
-                if (mData.need_sync) {
-                    try {
-                        // Kiểm tra máy chủ trước khi ghi đè
-                        const { data: existing, error: fetchErr } = await window.supabaseClient
-                            .from('leaderboard')
-                            .select('id, score')
-                            .eq('user_id', user.id)
-                            .eq('mode', modeKey)
-                            .limit(1);
-
-                        if (fetchErr) throw fetchErr;
-
-                        if (existing && existing.length > 0) {
-                            let serverScore = existing[0].score;
-                            // LUÔN LƯU VÀO DATABASE ĐIỂM ALL-TIME CAO NHẤT TỪ TRƯỚC ĐẾN NAY CỦA BẠN
-                            if (mData.all_time > serverScore) {
-                                await window.supabaseClient.from('leaderboard')
-                                    .update({ score: mData.all_time, player_name: playerName, updated_at: new Date() })
-                                    .eq('user_id', user.id).eq('mode', modeKey);
-                            }
-                        } else {
-                            await window.supabaseClient.from('leaderboard')
-                                .insert([{ user_id: user.id, player_name: playerName, score: mData.all_time, mode: modeKey }]);
-                        }
-                        
-                        // Đồng bộ thành công -> HẠ CỜ HIỆU XUỐNG
-                        mData.need_sync = false;
-                        hasChanges = true;
-                        console.log(`[Sync] Đã đồng bộ kỷ lục ${modeKey} lên Cloud thành công!`);
-                        
-                    } catch (err) {
-                        console.error(`[Sync] Lỗi đẩy điểm ${modeKey}:`, err.message);
-                    }
-                }
-            }
-
-            if (hasChanges) {
-                localStorage.setItem('mm_best_offline_score', JSON.stringify(bestData));
-                renderMenuLeaderboard(); // Tải lại giao diện BXH nếu có điểm mới lên
-            }
-        }
-
-        // Tự động rà soát Cờ Hiệu (need_sync) để gửi bù dữ liệu mỗi khi Mở game hoặc Có Wifi lại
-        setTimeout(() => {
-            let pName = localStorage.getItem('mm_player_name');
-            if(pName) processSyncQueue(pName);
-        }, 3000); 
-
-        window.addEventListener('online', () => {
-            let pName = localStorage.getItem('mm_player_name');
-            if(pName) processSyncQueue(pName);
-        });
-
-        // Hàm tải BXH hiển thị xuống máy
-        async function fetchLeaderboard(mode, limit = 10) {
-            if (!window.supabaseClient) return [];
-            // Lấy thời gian để lọc (Tuần này hoặc Tháng này)
-            // LƯU Ý CHO GIÁM ĐỐC: Do cấu trúc Database hiện tại của bạn chỉ có cột 'updated_at' đơn giản,
-            // nên Supabase sẽ vẫn dựa vào thời gian gửi điểm lên để lọc Tuần/Tháng.
-            // Điều này kết hợp với cơ chế Reset ngầm ở máy Client sẽ đảm bảo điểm luôn chuẩn xác!
-            
-            let timeFilter = new Date();
-            if (state.goTabTime === 'week' || state.menuTabTime === 'week') {
-                timeFilter.setDate(timeFilter.getDate() - 7);
-            } else if (state.goTabTime === 'month' || state.menuTabTime === 'month') {
-                timeFilter.setDate(timeFilter.getDate() - 30);
-            } else {
-                timeFilter = new Date(0); // All time
-            }
-
-            const { data, error } = await window.supabaseClient
-                .from('leaderboard')
-                .select('player_name, score')
-                .eq('mode', mode)
-                .gte('updated_at', timeFilter.toISOString())
-                .order('score', { ascending: false })
-                .limit(limit);
-                
-            if (error) return [];
-            return data.map(item => ({ n: item.player_name, s: item.score }));
-        }
-
-        // ==========================================
-        // 5. HIỂN THỊ BẢNG XẾP HẠNG (UI)
-        // ==========================================
         function buildLeaderboardHTML(containerId, dataList, isPersonalTable) {
             const container = document.getElementById(containerId);
-            if (!container) return;
             container.innerHTML = '';
             let maxRows = containerId === 'menu-bxh-rows' ? 10 : 6;
 
@@ -862,73 +808,11 @@
             buildLeaderboardHTML('go-bxh-container', list, isPers);
         }
 
-        // ==========================================
-        // 6. SỰ KIỆN NÚT BẤM BẢNG XẾP HẠNG
-        // ==========================================
-        // SỰ KIỆN TAB Ở MÀN HÌNH MENU
-        document.querySelectorAll('#leaderboard-screen [data-l-type]').forEach(btn => {
-            btn.addEventListener('click', (e) => { 
-                document.querySelectorAll('#leaderboard-screen [data-l-type]').forEach(b => b.classList.remove('active')); 
-                e.target.classList.add('active'); 
-                state.menuTabType = e.target.getAttribute('data-l-type'); 
-                renderMenuLeaderboard(); 
-            });
-        });
-
-        document.querySelectorAll('#leaderboard-screen [data-l-mode]').forEach(btn => {
-            btn.addEventListener('click', (e) => { 
-                document.querySelectorAll('#leaderboard-screen [data-l-mode]').forEach(b => b.classList.remove('active')); 
-                e.target.classList.add('active'); 
-                state.menuTabMode = e.target.getAttribute('data-l-mode'); 
-                renderMenuLeaderboard(); 
-            });
-        });
-
-        document.querySelectorAll('#leaderboard-screen [data-l-time]').forEach(btn => {
-            btn.addEventListener('click', (e) => { 
-                document.querySelectorAll('#leaderboard-screen [data-l-time]').forEach(b => b.classList.remove('active')); 
-                e.target.classList.add('active'); 
-                state.menuTabTime = e.target.getAttribute('data-l-time'); 
-                renderMenuLeaderboard(); 
-            });
-        });
-
-        // SỰ KIỆN TAB Ở MÀN HÌNH GAME OVER
-        function switchGoType(type) { 
-            state.goTabType = type; 
-            document.getElementById('go-tab-personal').classList.toggle('active', type === 'personal'); 
-            document.getElementById('go-tab-online').classList.toggle('active', type === 'online'); 
-            renderGoLeaderboard(); 
-        }
-
-        function switchGoTime(time) { 
-            state.goTabTime = time; 
-            document.getElementById('go-time-week').classList.toggle('active', time === 'week'); 
-            document.getElementById('go-time-month').classList.toggle('active', time === 'month'); 
-            document.getElementById('go-time-all').classList.toggle('active', time === 'all'); 
-            renderGoLeaderboard(); 
-        }
-
-        // ==========================================
-        // 7. ÂM THANH & CÁC CHỨC NĂNG HỖ TRỢ
-        // ==========================================
-        function slowScrollTo(targetId) {
-            const container = document.getElementById('main-scroll');
-            const target = document.getElementById(targetId);
-            if (!container || !target) return;
-            container.style.scrollSnapType = 'none';
-            const start = container.scrollTop;
-            const change = target.offsetTop - start;
-            let startTime = null;
-            function animateScroll(currentTime) {
-                if (!startTime) startTime = currentTime;
-                const t = (currentTime - startTime) / 500;
-                container.scrollTop = (t < 1 ? 0.5*t*t*t : 0.5*((t-2)*(t-2)*(t-2)+2)) * change + start;
-                if (currentTime - startTime < 1000) requestAnimationFrame(animateScroll);
-                else { container.scrollTop = target.offsetTop; container.style.scrollSnapType = 'y mandatory'; }
-            }
-            requestAnimationFrame(animateScroll);
-        }
+        document.querySelectorAll('[data-l-type]').forEach(btn => btn.addEventListener('click', (e) => { document.querySelectorAll('[data-l-type]').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); state.menuTabType = e.target.getAttribute('data-l-type'); renderMenuLeaderboard(); }));
+        document.querySelectorAll('[data-l-mode]').forEach(btn => btn.addEventListener('click', (e) => { document.querySelectorAll('[data-l-mode]').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); state.menuTabMode = e.target.getAttribute('data-l-mode'); renderMenuLeaderboard(); }));
+        document.querySelectorAll('[data-l-time]').forEach(btn => btn.addEventListener('click', (e) => { document.querySelectorAll('[data-l-time]').forEach(b => b.classList.remove('active')); e.target.classList.add('active'); state.menuTabTime = e.target.getAttribute('data-l-time'); renderMenuLeaderboard(); }));
+        function switchGoType(type) { state.goTabType = type; document.getElementById('go-tab-personal').classList.toggle('active', type === 'personal'); document.getElementById('go-tab-online').classList.toggle('active', type === 'online'); renderGoLeaderboard(); }
+        function switchGoTime(time) { state.goTabTime = time; document.getElementById('go-time-week').classList.toggle('active', time === 'week'); document.getElementById('go-time-month').classList.toggle('active', time === 'month'); document.getElementById('go-time-all').classList.toggle('active', time === 'all'); renderGoLeaderboard(); }
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         function playSound(type) {
@@ -944,9 +828,6 @@
             else if (type === 'gameover') { osc.type = 'sawtooth'; osc.frequency.setValueAtTime(250, audioCtx.currentTime); osc.frequency.linearRampToValueAtTime(80, audioCtx.currentTime + 0.5); gain.gain.setValueAtTime(0.2, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5); osc.start(); osc.stop(audioCtx.currentTime + 0.5); }
         }
 
-        // ==========================================
-        // 8. LOGIC CHƠI GAME & PAUSE
-        // ==========================================
         const gameScreen = document.getElementById('game-screen');
         const gridEl = document.getElementById('grid');
         const levelEl = document.getElementById('level-val');
@@ -955,26 +836,6 @@
         const modeLabelEl = document.getElementById('mode-label');
         const statusEl = document.getElementById('status');
         const btnHint = document.getElementById('btn-hint');
-
-        function pauseGame() {
-            if (!state.isPlaying || state.isPaused) return;
-            state.isPaused = true;
-            document.getElementById('pause-overlay').style.display = 'flex';
-        }
-
-        function resumeGame() {
-            state.isPaused = false;
-            document.getElementById('pause-overlay').style.display = 'none';
-        }
-
-        function quitFromPause() {
-            state.isPaused = false;
-            state.isPlaying = false; 
-            document.getElementById('pause-overlay').style.display = 'none';
-            document.getElementById('game-screen').style.display = 'none';
-            renderMenuLeaderboard(); 
-            slowScrollTo('menu-screen');
-        }
 
         document.querySelectorAll('.mode-btn').forEach(btn => {
             btn.addEventListener('click', (e) => { startGameWithMode(e.target.getAttribute('data-mode')); });
@@ -985,9 +846,8 @@
             modeLabelEl.innerText = MODE_NAMES[modeId];
             let lastLevel = parseInt(localStorage.getItem(`mm_last_level_${modeId}`) || 1);
             state.level = Math.max(1, lastLevel - (Math.floor(Math.random() * 3) + 2));
-            state.score = 0; state.lives = 3; state.isPlaying = true; state.isPaused = false;
+            state.score = 0; state.lives = 3; state.isPlaying = true;
             document.getElementById('gameover-overlay').style.display = 'none';
-            document.getElementById('pause-overlay').style.display = 'none';
             gameScreen.style.display = 'flex';
             updateUI();
             setTimeout(() => { startRound(); }, 500);
@@ -1010,7 +870,6 @@
         }
 
         function startRound() {
-            if(!state.isPlaying) return;
             state.userCorrectCount = 0; state.wrongClicksInRound = 0; state.isShowingPattern = true; state.firstClickTime = null; state.hintUsedInRound = false; btnHint.disabled = false;
             updateDifficulty(); createGrid();
             state.sequence = [];
@@ -1024,18 +883,18 @@
 
             if (state.mode === 'seq') {
                 statusEl.innerText = "Ghi nhớ chính xác THỨ TỰ...";
-                state.sequence.forEach((index, i) => { setTimeout(() => { if(!state.isPaused) { tiles[index].classList.add('flash'); playSound('flash'); setTimeout(() => tiles[index].classList.remove('flash'), 500); } }, 400 + i * 800); });
+                state.sequence.forEach((index, i) => { setTimeout(() => { tiles[index].classList.add('flash'); playSound('flash'); setTimeout(() => tiles[index].classList.remove('flash'), 500); }, 400 + i * 800); });
                 setTimeout(() => { state.isShowingPattern = false; statusEl.innerText = "Bấm lại theo đúng thứ tự!"; }, 400 + state.sequence.length * 800 + 200);
             } else if (state.mode === 'color') {
                 statusEl.innerText = "Nhớ vị trí: TRẮNG trước, VÀNG sau!";
                 state.seqA = state.sequence.slice(0, Math.ceil(state.sequence.length / 2)); state.seqB = state.sequence.slice(Math.ceil(state.sequence.length / 2));
                 setTimeout(() => {
-                    if(!state.isPaused){ state.seqA.forEach(idx => tiles[idx].classList.add('flash')); state.seqB.forEach(idx => tiles[idx].classList.add('flash-b')); playSound('flash'); }
+                    state.seqA.forEach(idx => tiles[idx].classList.add('flash')); state.seqB.forEach(idx => tiles[idx].classList.add('flash-b')); playSound('flash');
                     setTimeout(() => { tiles.forEach(t => { t.classList.remove('flash'); t.classList.remove('flash-b'); }); state.isShowingPattern = false; statusEl.innerText = "Hãy tìm tất cả ô TRẮNG trước!"; }, flashDuration);
                 }, 400);
             } else {
                 setTimeout(() => {
-                    if(!state.isPaused) { state.sequence.forEach(idx => tiles[idx].classList.add('flash')); playSound('flash'); }
+                    state.sequence.forEach(idx => tiles[idx].classList.add('flash')); playSound('flash');
                     setTimeout(() => {
                         tiles.forEach(t => t.classList.remove('flash'));
                         if (state.mode === 'rot') { gridEl.classList.add('rotate-90'); statusEl.innerText = "Ma trận đã xoay! Mời chọn lại."; }
@@ -1043,7 +902,7 @@
                             statusEl.innerText = "Nhiễu sóng...";
                             let rem = [...indices]; for (let i = rem.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [rem[i], rem[j]] = [rem[j], rem[i]]; }
                             let free = rem.slice(0, Math.min(3 + Math.floor(state.level / 2), 10));
-                            if(!state.isPaused){ free.forEach(idx => tiles[idx].classList.add('flash-dist')); playSound('flash_dist'); }
+                            free.forEach(idx => tiles[idx].classList.add('flash-dist')); playSound('flash_dist');
                             setTimeout(() => { free.forEach(idx => tiles[idx].classList.remove('flash-dist')); statusEl.innerText = "Mời chọn lại các ô TRẮNG."; state.isShowingPattern = false; }, 500);
                         } else { statusEl.innerText = "Mời bạn chọn lại các ô!"; }
                         state.isShowingPattern = false;
@@ -1056,8 +915,6 @@
             if (!state.isPlaying || state.isShowingPattern || state.hintUsedInRound || state.isPaused) return;
             if (state.lives <= 1) { statusEl.innerText = "Cảnh báo: Không đủ mạng!"; return; }
             state.lives -= 1; state.hintUsedInRound = true; state.isShowingPattern = true; btnHint.disabled = true; updateUI();
-            if (navigator.vibrate) navigator.vibrate([80, 50, 80]);
-
             const tiles = document.querySelectorAll('.tile');
             state.sequence.forEach(idx => {
                 if (!tiles[idx].classList.contains('correct') && !tiles[idx].classList.contains('correct-b')) {
@@ -1069,7 +926,7 @@
             setTimeout(() => { tiles.forEach(t => { t.classList.remove('flash'); t.classList.remove('flash-b'); }); state.isShowingPattern = false; statusEl.innerText = "Tiếp tục chơi!"; }, 500);
         });
 
-        function handleTileClick(index, tileElement) {
+       function handleTileClick(index, tileElement) {
             if (state.isShowingPattern || !state.isPlaying || state.isPaused) return;
             if (tileElement.classList.contains('correct') || tileElement.classList.contains('correct-b') || tileElement.classList.contains('wrong')) return;
 
@@ -1094,7 +951,7 @@
                     state.isPlaying = false;
                     let isCombo = state.firstClickTime && (Date.now() - state.firstClickTime <= 2000);
                     let bonus = state.level * 100; if (state.wrongClicksInRound > 0) bonus = Math.floor(bonus / 2);
-                    if (isCombo) { bonus *= 2; playSound('combo'); statusEl.innerHTML = `⚡ COMBO SPEED X2! ⚡`; if (navigator.vibrate) navigator.vibrate([50, 50, 50, 50, 150]); }
+                    if (isCombo) { bonus *= 2; playSound('combo'); statusEl.innerHTML = `⚡ COMBO SPEED X2! ⚡`; }
                     else { playSound('round_success'); statusEl.innerText = `Qua màn!`; }
                     state.score += bonus; state.level += 1; updateUI();
                     setTimeout(() => { state.isPlaying = true; startRound(); }, 1500);
@@ -1104,11 +961,9 @@
                 if (state.wrongClicksInRound <= 2) { playSound('wrong_soft'); statusEl.innerText = customErr || `Nhầm rồi! (${state.wrongClicksInRound}/2)`; }
                 else if (state.wrongClicksInRound === 3) {
                     state.isPlaying = false; playSound('rematch_signal'); state.lives -= 1; updateUI();
-                    if (navigator.vibrate) navigator.vibrate(300);
                     if (state.lives <= 0) handleGameOver(); else { statusEl.innerText = "Tạo lại ma trận mới..."; setTimeout(() => { state.isPlaying = true; startRound(); }, 1800); }
                 } else {
                     state.isPlaying = false; playSound('wrong_soft'); state.lives -= 1; state.level = Math.max(1, state.level - 1); updateUI();
-                    if (navigator.vibrate) navigator.vibrate(300);
                     if (state.lives <= 0) handleGameOver(); else { statusEl.innerText = "Bị hạ xuống 1 Level."; setTimeout(() => { state.isPlaying = true; startRound(); }, 1800); }
                 }
             }
@@ -1122,6 +977,7 @@
             savePersonalScore(state.mode, state.score);
 
             if (state.score > 0) {
+                // Sử dụng await để đảm bảo điểm đẩy lên máy chủ rồi mới render Bảng Xếp Hạng
                 await saveHighScore(state.playerName, state.score, state.mode);
             }
 
@@ -1153,10 +1009,39 @@
             document.getElementById('score-val').innerText = state.score; 
         }
 
-        // Khởi chạy hệ thống lúc mới tải trang
-        initPlayerProfile(); 
-        renderMenuLeaderboard();
+         // ==========================================
+        // CƠ CHẾ TẠM DỪNG (PAUSE)
+        // ==========================================
+        const btnPauseEl = document.getElementById('btn-pause');
+        
+        function pauseGame() {
+            // Bỏ chặn, chỉ cần trong game là được bấm Tạm dừng
+            if (!state.isPlaying || state.isPaused) {
+                return;
+            }
+            state.isPaused = true;
+            document.getElementById('pause-overlay').style.display = 'flex';
+        }
 
+        function resumeGame() {
+            state.isPaused = false;
+            document.getElementById('pause-overlay').style.display = 'none';
+        }
+
+        function quitFromPause() {
+            state.isPaused = false;
+            state.isPlaying = false; 
+            document.getElementById('pause-overlay').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'none';
+            
+            renderMenuLeaderboard(); 
+            slowScrollTo('menu-screen');
+        }
+
+
+        initPlayerProfile();
+        renderMenuLeaderboard();
     </script>
 </body>
+</html>
 </html>
