@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Memory Matrix Pro V6.1 - Ultimate Leaderboard & Profile Edition</title>
+    <title>Memory Matrix Pro V6.2 - Ultimate Leaderboard & Profile Edition</title>
     <link rel="manifest" href="./manifest.json">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -291,6 +291,7 @@
         .score-board h1 { font-size: 42px; font-weight: 800; }
         .score-board p { font-size: 13px; opacity: 0.8; text-transform: uppercase; }
 
+/* ĐẦU KHỐI: CHỈNH SỬA CSS BUNG LÒ XO (V8.4) */
         .grid-container {
             width: 100%;
             aspect-ratio: 1 / 1;
@@ -300,9 +301,15 @@
             display: grid;
             gap: 5px; 
             box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            /* Đã xóa transition mặc định ở đây để tránh bị bung xoay khi thoát */
         }
-        .grid-container.rotate-90 { transform: rotate(90deg); }
+        
+        /* Chỉ gắn class này vào khi đang chơi chế độ Xoay */
+        /* [HƯỚNG DẪN BỔ SUNG YÊU CẦU]: Muốn nó xoay chậm và dễ nhìn hơn, bạn hãy đổi số 0.6s ở bên dưới thành 0.8s, 1.0s hoặc 1.2s nhé! */
+        .matrix-rotating {
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+/* HẾT KHỐI: CHỈNH SỬA CSS BUNG LÒ XO (V8.4) */
 
         .tile {
             background-color: var(--tile-normal);
@@ -439,10 +446,10 @@
 <body>
 
     <div class="scroll-container" id="main-scroll">
-        
+        <!-- Tiêu đề -->
         <div id="menu-screen" class="screen-section">
-            <!-- Tiêu đề -->
-            <div class="menu-title">Memory<br>Matrix v6.1</div>
+            <div class="menu-title">Memory<br>Matrix</div>
+            <div class="menu-desc">(v2.2 Sửa lỗi và thêm cơ chế xoay)</div>
             <div class="menu-desc">Chọn chế độ để kiểm tra giới hạn não bộ</div>
 
             <div class="menu-buttons">
@@ -663,7 +670,13 @@
         const state = {
             mode: 'classic', level: 1, score: 0, lives: 3, gridSize: 3, tilesToRemember: 3,
             sequence: [], seqA: [], seqB: [], userCorrectCount: 0, wrongClicksInRound: 0,
+            // ==========================================
+// ==========================================
+// ĐẦU KHỐI: THÊM BIẾN GÓC XOAY (V8.2)
             isShowingPattern: false, isPlaying: false, firstClickTime: null, hintUsedInRound: false, isPaused: false,
+            currentRotation: 0, // Biến lưu trữ góc xoay cộng dồn
+// HẾT KHỐI: THÊM BIẾN GÓC XOAY (V8.2)
+// ==========================================
             playerName: '',
             menuTabType: 'online', menuTabMode: 'classic', menuTabTime: 'month',
             goTabType: 'online', goTabTime: 'month'
@@ -841,28 +854,48 @@
             btn.addEventListener('click', (e) => { startGameWithMode(e.target.getAttribute('data-mode')); });
         });
 
+        // ==========================================
+// ĐẦU KHỐI: KHỞI TẠO GAME & LƯỚI BẢO TOÀN GÓC XOAY (V8.2)
         function startGameWithMode(modeId) {
             state.mode = modeId;
             modeLabelEl.innerText = MODE_NAMES[modeId];
             let lastLevel = parseInt(localStorage.getItem(`mm_last_level_${modeId}`) || 1);
             state.level = Math.max(1, lastLevel - (Math.floor(Math.random() * 3) + 2));
             state.score = 0; state.lives = 3; state.isPlaying = true;
+            state.currentRotation = 0; // Reset góc xoay về 0 khi bắt đầu game mới
+            
             document.getElementById('gameover-overlay').style.display = 'none';
             gameScreen.style.display = 'flex';
             updateUI();
             setTimeout(() => { startRound(); }, 500);
         }
 
+        // ==========================================
+// ĐẦU KHỐI: BẬT TRANSITION CHO GRID (V8.4)
         function createGrid() {
-            gridEl.innerHTML = ''; gridEl.className = 'grid-container';
+            gridEl.innerHTML = ''; 
+            
+            // Nếu đang ở chế độ xoay, ta áp class có transition mượt vào
+            if (state.mode === 'rot') {
+                gridEl.className = 'grid-container matrix-rotating';
+            } else {
+                gridEl.className = 'grid-container';
+            }
+
             gridEl.style.gridTemplateColumns = `repeat(${state.gridSize}, 1fr)`;
             gridEl.style.gridTemplateRows = `repeat(${state.gridSize}, 1fr)`;
+            
+            // Giữ góc (Nhưng vì đã xóa transition mặc định ở Bước 1 nên lúc tạo mới lưới nó sẽ sập phát vào ngay vị trí cũ chứ không quay vòng vòng)
+            gridEl.style.transform = `rotate(${state.currentRotation}deg)`;
+            
             for (let i = 0; i < state.gridSize * state.gridSize; i++) {
                 const tile = document.createElement('div'); tile.classList.add('tile');
                 tile.dataset.index = i; tile.addEventListener('click', () => handleTileClick(i, tile));
                 gridEl.appendChild(tile);
             }
         }
+// HẾT KHỐI: BẬT TRANSITION CHO GRID (V8.4)
+// ==========================================
 
         function updateDifficulty() {
             state.gridSize = Math.min(3 + Math.floor((state.level - 1) / 3), 8);
@@ -897,7 +930,47 @@
                     state.sequence.forEach(idx => tiles[idx].classList.add('flash')); playSound('flash');
                     setTimeout(() => {
                         tiles.forEach(t => t.classList.remove('flash'));
-                        if (state.mode === 'rot') { gridEl.classList.add('rotate-90'); statusEl.innerText = "Ma trận đã xoay! Mời chọn lại."; }
+
+                        // ==========================================
+// ĐẦU KHỐI: MA TRẬN XOAY ĐA CẤP ĐỘ KHÓ (V8.3)
+                        if (state.mode === 'rot') { 
+                            let rotDegree = 90; // Mặc định Level 1-5: Xoay xuôi chiều 90 độ
+
+                            // Level 6-10: Xoay ngẫu nhiên 90 độ Xuôi hoặc Ngược
+                            if (state.level > 5 && state.level <= 10) {
+                                rotDegree = Math.random() < 0.5 ? 90 : -90;
+                            } 
+                            // Level 11+: Xoay Hỗn Mang (Hỗ trợ 180 độ hoặc xoay ảo 2 vòng)
+                            else if (state.level > 10) {
+                                let rng = Math.random();
+                                if (rng < 0.4) {
+                                    rotDegree = 90;  // 40%: Xuôi 90 độ
+                                } else if (rng < 0.8) {
+                                    rotDegree = -90; // 40%: Ngược 90 độ
+                                } else if (rng < 0.9) {
+                                    rotDegree = 180; // 10%: Lộn ngược 180 độ
+                                } else {
+                                    // 10% Siêu Cấp: Xoay ảo (Hurricane) - Giả vờ xoay ngược 2 vòng (720đ) nhưng thực chất đứng im hoặc cộng dồn 90đ
+                                    rotDegree = (Math.random() < 0.5 ? 450 : -450); 
+                                }
+                            }
+
+                            state.currentRotation += rotDegree; // Cộng dồn góc mới
+                            
+                            // Gắn hiệu ứng xoay (Vì dùng transition CSS mặc định nên góc lớn sẽ xoay nhanh hơn bình thường một chút rất đẹp)
+                            gridEl.style.transform = `rotate(${state.currentRotation}deg)`; 
+                            
+                            // Chỉnh sửa câu chữ Text để buff tinh thần người chơi tùy theo độ khó
+                            if (Math.abs(rotDegree) > 90) {
+                                statusEl.innerText = "🌀 Cơn lốc Ma trận! Mời chọn lại."; 
+                                if(navigator.vibrate) navigator.vibrate(100); // Rung cảnh báo ảo ảnh
+                            } else {
+                                statusEl.innerText = "Ma trận đã xoay! Mời chọn lại."; 
+                            }
+                        }
+// HẾT KHỐI: MA TRẬN XOAY ĐA CẤP ĐỘ KHÓ (V8.3)
+// ==========================================
+
                         else if (state.mode === 'dist') {
                             statusEl.innerText = "Nhiễu sóng...";
                             let rem = [...indices]; for (let i = rem.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [rem[i], rem[j]] = [rem[j], rem[i]]; }
@@ -997,10 +1070,24 @@
             document.getElementById('gameover-overlay').style.display = 'flex';
         }
 
+        // ==========================================
+// ĐẦU KHỐI: FIX HOÀN TOÀN LỖI BUNG LÒ XO KHI RESET/THOÁT (V8.4)
+
+        // HÀM RESET TỨC THÌ GÓC XOAY KHÔNG CẦN TRANSITION
+        function instantResetRotation() {
+            // 1. Tước bỏ phép thuật transition mượt mà ngay lập tức
+            gridEl.classList.remove('matrix-rotating');
+            // 2. Chém cái rụp, ép phần tử chớp nháy về 0 độ lập tức không vòng vèo
+            gridEl.style.transform = 'rotate(0deg)';
+            state.currentRotation = 0; 
+        }
+
         function quitToMenu() {
             document.getElementById('gameover-overlay').style.display = 'none';
             document.getElementById('game-screen').style.display = 'none';
-            renderMenuLeaderboard(); slowScrollTo('menu-screen');
+            instantResetRotation(); // Dập lò xo
+            renderMenuLeaderboard(); 
+            slowScrollTo('menu-screen');
         }
 
         function updateUI() { 
@@ -1009,13 +1096,10 @@
             document.getElementById('score-val').innerText = state.score; 
         }
 
-         // ==========================================
-        // CƠ CHẾ TẠM DỪNG (PAUSE)
-        // ==========================================
+        // --- CÁC HÀM ĐIỀU KHIỂN PAUSE ---
         const btnPauseEl = document.getElementById('btn-pause');
         
         function pauseGame() {
-            // Bỏ chặn, chỉ cần trong game là được bấm Tạm dừng
             if (!state.isPlaying || state.isPaused) {
                 return;
             }
@@ -1033,10 +1117,12 @@
             state.isPlaying = false; 
             document.getElementById('pause-overlay').style.display = 'none';
             document.getElementById('game-screen').style.display = 'none';
-            
+            instantResetRotation(); // Dập lò xo
             renderMenuLeaderboard(); 
             slowScrollTo('menu-screen');
         }
+// HẾT KHỐI: FIX HOÀN TOÀN LỖI BUNG LÒ XO KHI RESET/THOÁT (V8.4)
+// ==========================================
 
 
         initPlayerProfile();
