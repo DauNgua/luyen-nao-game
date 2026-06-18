@@ -730,7 +730,9 @@
                         const { data: existing, error: fetchErr } = await window.supabaseClient
                             .from('leaderboard')
                             .select('id, score')
-                            .eq('user_id', user.id).eq('mode', modeKey).limit(1);
+                            .eq('user_id', user.id)
+                            .eq('mode', modeKey)
+                            .limit(1);
 
                         if (fetchErr) throw fetchErr;
 
