@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Memory Matrix Pro V6.2 - Ultimate Leaderboard & Profile Edition</title>
+    <title>Memory Matrix Pro V2.3 - Ultimate Leaderboard & Profile Edition</title>
     <link rel="manifest" href="./manifest.json">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -449,7 +449,7 @@
         <!-- Tiêu đề -->
         <div id="menu-screen" class="screen-section">
             <div class="menu-title">Memory<br>Matrix</div>
-            <div class="menu-desc">(v2.2 Sửa lỗi và thêm cơ chế xoay)</div>
+            <div class="menu-desc">(v2.3 thêm cơ chế hiện thông báo cập nhật khi có bản mới)</div>
             <div class="menu-desc">Chọn chế độ để kiểm tra giới hạn não bộ</div>
 
             <div class="menu-buttons">
@@ -527,6 +527,59 @@
             <button id="btn-hint" class="btn btn-hint">Gợi ý (-1 Mạng)</button>
         </div>
 
+        // ==========================================
+// ĐẦU KHỐI: GIAO DIỆN TOAST CẬP NHẬT (V8.5)
+        <!-- THANH THÔNG BÁO CẬP NHẬT PWA NGẦM -->
+        <style>
+            .update-toast {
+                position: fixed;
+                bottom: -100px; /* Ẩn ngoài màn hình */
+                left: 50%;
+                transform: translateX(-50%);
+                background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+                color: white;
+                padding: 12px 20px;
+                border-radius: 12px;
+                box-shadow: 0 5px 20px rgba(0,0,0,0.4);
+                display: flex;
+                align-items: center;
+                gap: 15px;
+                z-index: 1000;
+                transition: bottom 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+                width: 90%;
+                max-width: 400px;
+                border: 1px solid #4CAF50;
+            }
+            .update-toast.show {
+                bottom: 20px; /* Trượt lên */
+            }
+            .update-text {
+                font-size: 13px;
+                flex: 1;
+                font-weight: 500;
+            }
+            .btn-update-now {
+                background: #4CAF50;
+                color: white;
+                border: none;
+                padding: 6px 12px;
+                border-radius: 8px;
+                font-weight: bold;
+                cursor: pointer;
+                font-size: 13px;
+                box-shadow: 0 2px 8px rgba(76, 175, 80, 0.4);
+                white-space: nowrap;
+            }
+            .btn-update-now:active { transform: scale(0.95); }
+        </style>
+
+        <div id="pwa-update-toast" class="update-toast">
+            <div class="update-text">✨ Bản cập nhật mới đã tải xong! Khởi động lại để trải nghiệm.</div>
+            <button class="btn-update-now" onclick="applyPwaUpdate()">Cập nhật ngay</button>
+        </div>
+// HẾT KHỐI: GIAO DIỆN TOAST CẬP NHẬT (V8.5)
+// ==========================================
+
         <div id="gameover-overlay">
             <div class="go-title">HẾT MẠNG!</div>
             <div class="go-stat" id="go-mode-reached">Chế độ: Cổ Điển - Màn đạt được: 1</div>
@@ -560,10 +613,44 @@
 
     <script>
         // ==========================================
-        // ĐẦU KHỐI: CORE SYSTEM VÀ DATABASE SUPABASE (V7.3)
+// ĐẦU KHỐI: CORE SYSTEM PWA TOAST (V8.5)
+        let newWorker = null;
+
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('./sw.js').catch(err => console.log("SW Register failed (bỏ qua nếu test local)"));
+            navigator.serviceWorker.register('./sw.js').then(reg => {
+                // Sự kiện bắn ra khi có file sw.js mới trên GitHub tải về
+                reg.addEventListener('updatefound', () => {
+                    newWorker = reg.installing;
+                    newWorker.addEventListener('statechange', () => {
+                        // Trạng thái 'installed' tức là đã tải xong ngầm 100%
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            // Gọi CSS trượt thanh Toast lên màn hình
+                            document.getElementById('pwa-update-toast').classList.add('show');
+                            if (window.SoundManager) window.SoundManager.play('combo'); // Ting một cái nếu muốn
+                        }
+                    });
+                });
+            }).catch(err => console.log("SW Register failed"));
         }
+
+        // Hàm thực thi khi người dùng chủ động bấm nút "Cập nhật ngay"
+        function applyPwaUpdate() {
+            if (newWorker) {
+                // Bắn tín hiệu chọc SW khởi động bộ nhớ mới ngay lập tức
+                newWorker.postMessage({ action: 'skipWaiting' });
+            }
+        }
+
+        // Lắng nghe tín hiệu SW báo cáo đã kích hoạt xong bản mới -> Reload lại F5
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (!refreshing) {
+                window.location.reload();
+                refreshing = true;
+            }
+        });
+// HẾT KHỐI: CORE SYSTEM PWA TOAST (V8.5)
+// ==========================================
 
         window.SUPABASE_URL = 'https://zyymowgbbxpsrkoxomoj.supabase.co';
         window.SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp5eW1vd2diYnhwc3Jrb3hvbW9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3MDAyOTUsImV4cCI6MjA5NzI3NjI5NX0.hgDtLVQT8ZzsGnFfrQdSLzOaJbHLuaKnXl0NMQGEpWs';
