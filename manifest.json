@@ -1,0 +1,22 @@
+{
+  "name": "Luyện não Unlimited",
+  "short_name": "Luyện não",
+  "description": "Nền tảng rèn luyện tư duy và phản xạ thông qua các Mini-game Modules.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#2b2c31",
+  "theme_color": "#f05e4b",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
