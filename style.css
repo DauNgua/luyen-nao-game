@@ -1,0 +1,108 @@
+
+    /* =========================================
+        HỆ THỐNG GIAO DIỆN LIGHT/DARK THEME ĐỘNG
+        ========================================= */
+    @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+
+    /* --- LIGHT THEME (MẶC ĐỊNH) --- */
+    :root {
+        --bg-main: #f4f6f8;         
+        --bg-card: #ffffff;         
+        --border-line: #e2e8f0;     
+        --text-dark: #2d3748;       
+        --text-muted: #718096;      
+        --primary-color: #f05e4b;   
+        --img-placeholder: #edf2f7; 
+        --radius-main: 12px;
+    }
+
+    /* --- DARK THEME (Sử dụng đúng màu Icon gốc) --- */
+    [data-theme="dark"] {
+        --bg-main: #2b2c31;         
+        --bg-card: #1d1e21;         
+        --border-line: #3e3835;     
+        --text-dark: #f5f5f5;       
+        --text-muted: #a4a5aa;      
+        --primary-color: #ff7455;   
+        --img-placeholder: #2a2a30; 
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Nunito', sans-serif; }
+
+    body {
+        background-color: var(--bg-main);
+        color: var(--text-dark);
+        display: flex; flex-direction: column; align-items: center; min-height: 100vh;
+        transition: background-color 0.3s ease; 
+    }
+
+    /* --- HEADER MỚI CÓ THANH TÌM KIẾM & NÚT GẠT --- */
+    .global-header {
+        width: 100%; max-width: 800px;
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 20px;
+    }
+    .header-brand { font-size: 28px; font-weight: 900; color: var(--text-dark); transition: color 0.3s ease; }
+    
+    .header-actions { display: flex; align-items: center; gap: 15px; }
+    .search-box {
+        padding: 10px 15px; border-radius: 20px; border: 1px solid var(--border-line);
+        background-color: var(--bg-card); color: var(--text-dark);
+        font-size: 14px; outline: none; transition: all 0.3s ease;
+    }
+    .search-box::placeholder { color: var(--text-muted); }
+
+    /* Nút Gạt Theme Trắng/Đen */
+    .theme-switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+    .theme-switch input { opacity: 0; width: 0; height: 0; }
+    .slider-round {
+        position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+        background-color: #cbd5e0; transition: .4s; border-radius: 34px;
+    }
+    .slider-round:before {
+        position: absolute; content: ""; height: 18px; width: 18px;
+        left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%;
+    }
+    input:checked + .slider-round { background-color: var(--primary-color); }
+    input:checked + .slider-round:before { transform: translateX(20px); }
+
+    /* --- QUẢN LÝ MÀN HÌNH --- */
+    .screen { width: 100%; max-width: 800px; padding: 10px 20px 40px 20px; display: flex; flex-direction: column; }
+    .hidden { display: none !important; }
+    .active { display: flex !important; }
+
+    /* --- MENU PHÂN LOẠI (TABS) --- */
+    .category-tabs { display: flex; gap: 25px; margin-bottom: 30px; overflow-x: auto; border-bottom: 2px solid var(--border-line); }
+    .category-tabs::-webkit-scrollbar { display: none; }
+    .tab { font-weight: 700; font-size: 15px; color: var(--text-muted); padding-bottom: 10px; cursor: pointer; white-space: nowrap; border-bottom: 3px solid transparent; transition: 0.2s; }
+    .tab.active { color: var(--primary-color); border-bottom: 3px solid var(--primary-color); }
+    .tab:hover:not(.active) { color: var(--text-dark); }
+
+    /* --- VÙNG HIỂN THỊ CARD GAME DẠNG LƯỚI --- */
+    .category-section { margin-bottom: 40px; }
+    .category-title { font-size: 20px; font-weight: 800; margin-bottom: 15px; color: var(--text-dark); transition: color 0.3s ease; }
+    .games-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; }
+
+    .game-card { 
+        background-color: var(--bg-card); border-radius: var(--radius-main); cursor: pointer; 
+        transition: transform 0.2s, box-shadow 0.2s, background-color 0.3s, border-color 0.3s; 
+        overflow: hidden; border: 1px solid var(--border-line); 
+    }
+    .game-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.08); }
+    [data-theme="dark"] .game-card:hover { box-shadow: 0 10px 20px rgba(0,0,0,0.4); } 
+
+    .card-image-box { width: 100%; aspect-ratio: 16 / 9; background-color: var(--img-placeholder); display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--text-muted); border-bottom: 1px solid var(--border-line); transition: all 0.3s ease;}
+    .card-info { padding: 12px; }
+    .card-title { font-size: 15px; font-weight: 800; color: var(--text-dark); margin-bottom: 4px; transition: color 0.3s ease;}
+    .card-desc { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; }
+    .card-sub-desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+    /* --- VÙNG SÂN CHƠI LÚC BẤM VÀO MỘT GAME CON --- */
+    #game-canvas { 
+        width: 100%; aspect-ratio: 3 / 2; background: linear-gradient(135deg, #1a202c 0%, #11151c 100%); 
+        border-radius: var(--radius-main); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(255,255,255,0.05); 
+        display: flex; flex-direction: column; position: relative; overflow: hidden; 
+    }
+    .game-toolbar { width: 100%; display: flex; justify-content: space-between; margin-bottom: 15px; }
+    .btn-back { background-color: var(--primary-color); color: white; border: none; border-radius: 6px; padding: 8px 16px; font-weight: 800; font-size: 13px; cursor: pointer; transition: 0.1s; display: flex; align-items: center; gap: 5px; }
+    .btn-back:active { transform: scale(0.95); }
