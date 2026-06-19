@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Luyện Não Mô Đun</title>
+    
+    <!-- FILE CẤU HÌNH APP PWA -->
+    <link rel="manifest" href="./manifest.json">
+    <link rel="stylesheet" href="style.css">
+
+    
+</head>
+<body>
+
+    <!-- THANH HEADER (Gồm Tìm kiếm và Nút gạt sáng/tối) -->
+    <header class="global-header">
+        <div class="header-brand">Training Games</div>
+        <div class="header-actions">
+            <!-- Box search đẩy vào trong -->
+            <input type="text" class="search-box" placeholder="🔍 Bạn muốn tập gì?">
+            
+            <!-- Cần gạt Theme -->
+            <label class="theme-switch" title="Chuyển chế độ Giao Diện">
+                <input type="checkbox" id="theme-toggle">
+                <span class="slider-round"></span>
+            </label>
+        </div>
+    </header>
+
+    <!-- MÀN HÌNH 1: DASHBOARD CHỌN GAME MỚI (LUMOSITY STYLE) -->
+    <main id="menu-screen" class="screen active">
+        
+        <!-- Tabs Danh mục -->
+        <div class="category-tabs">
+            <div class="tab active">Tất Cả (All)</div>
+            <div class="tab">Tốc độ (Speed)</div>
+            <div class="tab">Trí nhớ (Memory)</div>
+            <div class="tab">Độ tập trung (Attention)</div>
+            <div class="tab">Linh hoạt (Flexibility)</div>
+        </div>
+        
+        <!-- Các Thẻ Game -->
+        <div class="game-dashboard">
+            
+            <div class="category-section">
+                <h3 class="category-title">Today's games</h3>
+                <div class="games-grid">
+                    
+                    <!-- Lệnh này sẽ gọi hàm openGame trong main.js -->
+                    <div class="game-card" onclick="AppManager.openGame('tri-nho-co-dien')">
+                        <div class="card-image-box">[ Icon Rubik ]</div>
+                        <div class="card-info">
+                            <div class="card-title">Memory Matrix</div>
+                            <div class="card-desc">MEMORY</div>
+                            <div class="card-sub-desc">Spatial Recall</div>
+                        </div>
+                    </div>
+
+                    <div class="game-card">
+                        <div class="card-image-box" style="background:#e6fffa;">[ Sắp ra mắt ]</div>
+                        <div class="card-info">
+                            <div class="card-title">Speed Match</div>
+                            <div class="card-desc">SPEED</div>
+                            <div class="card-sub-desc">Information Processing</div>
+                        </div>
+                    </div>
+
+                    <div class="game-card">
+                        <div class="card-image-box" style="background:#fffaf0;">[ Sắp ra mắt ]</div>
+                        <div class="card-info">
+                            <div class="card-title">Magic Chance</div>
+                            <div class="card-desc">MATH</div>
+                            <div class="card-sub-desc">Probabilistic Reasoning</div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div> 
+    </main>
+
+    <!-- MÀN HÌNH 2: GIAO DIỆN KHI BẤM VÀO CHƠI MỘT GAME CON -->
+    <main id="game-screen" class="screen hidden">
+        <div class="game-toolbar">
+            <button class="btn-back" onclick="AppManager.quitGame()">← Thoát Ra</button>
+        </div>
+        
+        <!-- Sân khấu đen 3:2 trống rỗng (Sẽ được file .js bơm code vào) -->
+        <div id="game-canvas"></div>
+    </main>
+
+    <!-- TỆP ĐIỀU PHỐI (Chứa hàm đóng mở game) -->
+    <script src="main.js"></script>
+
+    <!-- KHỞI ĐỘNG PWA & NÚT GẠT ĐEN/TRẮNG -->
+    <script>
+        // Kích hoạt tính năng Light/Dark Theme (Ghi nhớ cấu hình của User qua LocalStorage)
+        const toggleSwitch = document.getElementById('theme-toggle');
+        const currentTheme = localStorage.getItem('appTheme') || 'light';
+
+        if (currentTheme === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            toggleSwitch.checked = true;
+        }
+
+        toggleSwitch.addEventListener('change', function(e) {
+            if (e.target.checked) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                localStorage.setItem('appTheme', 'dark');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'light');
+                localStorage.setItem('appTheme', 'light');
+            }    
+        });
+
+        // Đăng ký Service Worker cho tính năng Cài đặt Web App (PWA) Offline
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                .then(() => console.log('PWA ServiceWorker đã khởi chạy!'))
+                .catch(err => console.log('Đang chạy Local, không cần lo lỗi SW.'));
+            });
+        }
+    </script>
+</body>
+</html>
