@@ -35,6 +35,9 @@ window.CurrentGame = {
         // Sinh toàn bộ giao diện và CSS tự động (Scoped CSS)
         container.innerHTML = `
             <style>
+                /* THÊM BỘ CHỐNG CO RÚT TỪ CSS HỆ THỐNG */
+                .stroop-wrapper, .stroop-wrapper * { box-sizing: border-box; }
+
                 .stroop-wrapper {
                     background: var(--bg-card, #1E293B);
                     color: var(--text-main, #FFFFFF);
@@ -45,17 +48,19 @@ window.CurrentGame = {
                     transition: background-color 0.2s ease;
                     user-select: none;
                 }
-                .stroop-header { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 20px; font-size: 14px; opacity: 0.8;}
+                
+                /* Ép chiều rộng 100% cho mọi khối để không bị ép nhỏ lại */
+                .stroop-header { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 20px; font-size: 14px; opacity: 0.8; width: 100%;}
                 .stroop-word-box {
-                    height: 140px; display: flex; justify-content: center; align-items: center;
+                    width: 100%; height: 140px; display: flex; justify-content: center; align-items: center;
                     background: rgba(0,0,0,0.1); border-radius: 12px; margin-bottom: 20px;
                 }
-                .stroop-word { font-size: 52px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-                .stroop-timer-bar { height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; margin-bottom: 20px; overflow: hidden; }
+                .stroop-word { font-size: 50px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+                .stroop-timer-bar { width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; margin-bottom: 20px; overflow: hidden; }
                 .stroop-timer-fill { height: 100%; background: var(--color-primary, #3B82F6); width: 100%; transition: width 0.05s linear; }
-                .stroop-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+                .stroop-grid { width: 100%; display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
                 
-                /* Tái sử dụng class btn-flat của hệ thống */
+                /* Nút bấm */
                 .stroop-wrapper .btn-flat {
                     background: var(--color-primary, #3B82F6); color: white; border: none; padding: 15px; font-size: 14px; font-weight: bold;
                     border-radius: 8px; cursor: pointer; transition: background 0.2s, transform 0.1s; width: 100%; outline: none;
@@ -63,11 +68,13 @@ window.CurrentGame = {
                 .stroop-wrapper .btn-flat:hover { background: var(--color-primary-hover, #2563EB); }
                 .stroop-wrapper .btn-flat:active { transform: scale(0.95); }
                 
-                /* Màn hình nhỏ (Overlay) */
-                .stroop-screen { display: none; flex-direction: column; align-items: center; height: 400px; justify-content: center;}
+                /* Layout màn hình */
+                .stroop-screen { display: none; flex-direction: column; align-items: center; min-height: 400px; justify-content: center; width: 100%;}
                 .stroop-screen.active { display: flex; }
-                #stroop-game-area { display: none; }
-                #stroop-game-area.active { display: block; }
+                
+                /* FIX LỖI Ở ĐÂY: Ép giao diện chơi game thành dạng cột (column) giống màn Game Over */
+                #stroop-game-area { display: none; flex-direction: column; align-items: center; width: 100%;}
+                #stroop-game-area.active { display: flex; }
             </style>
 
             <div class="stroop-wrapper" id="stroop-wrapper">
