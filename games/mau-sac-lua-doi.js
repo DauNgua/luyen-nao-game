@@ -25,6 +25,43 @@ window.CurrentGame = {
         ]
     },
 
+
+    // --- BỘ TẠO ÂM THANH GỖ (WOODEN SOUND ENGINE) ---
+    audioCtx: null,
+    playWoodenSound: function(type) {
+        // Khởi tạo AudioContext khi người dùng tương tác lần đầu để tránh lỗi block của trình duyệt
+        if (!this.audioCtx) this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (this.audioCtx.state === 'suspended') this.audioCtx.resume();
+        
+        const osc = this.audioCtx.createOscillator();
+        const gain = this.audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(this.audioCtx.destination);
+        const now = this.audioCtx.currentTime;
+
+        if (type === 'tick') { // Tiếng click mộc nhẹ khi bắt đầu
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(600, now);
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+            osc.start(now); osc.stop(now + 0.1);
+        } else if (type === 'correct') { // Tiếng gõ mõ trúc thanh tót (Trả lời đúng)
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(500, now);
+            osc.frequency.exponentialRampToValueAtTime(250, now + 0.15);
+            gain.gain.setValueAtTime(0.5, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+            osc.start(now); osc.stop(now + 0.15);
+        } else if (type === 'error') { // Tiếng cộc gỗ trầm đục (Trả lời sai / Hết giờ)
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(200, now);
+            osc.frequency.exponentialRampToValueAtTime(80, now + 0.15);
+            gain.gain.setValueAtTime(0.6, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+            osc.start(now); osc.stop(now + 0.2);
+        }
+    },
+
     // ==========================================
     // 2. HÀM KHỞI TẠO GAME (AppManager sẽ gọi hàm này)
     // ==========================================
@@ -124,6 +161,7 @@ window.CurrentGame = {
     // ==========================================
     startGame: function() {
         this.state.score = 0;
+        this.playWoodenSound('tick');
         this.state.level = 1;
         this.state.lives = 3;
         this.state.isPlaying = true;
@@ -189,10 +227,12 @@ window.CurrentGame = {
         const isCorrect = (selectedId === this.state.correctColorId);
         
         if (isCorrect) {
+            this.playWoodenSound('correct'); // Thêm dòng này
             this.state.score += (10 + this.state.level);
             this.state.level++;
             this.triggerFeedback('success');
         } else {
+            this.playWoodenSound('error'); // Thêm dòng này
             this.state.lives--;
             this.triggerFeedback('error');
         }
@@ -234,6 +274,9 @@ window.CurrentGame = {
                 if (!this.state.isTransitioning) {
                     this.state.isTransitioning = true;
                     this.state.lives--; // Hết giờ = Mất 1 mạng
+
+                    this.playWoodenSound('error');
+                    
                     this.triggerFeedback('error');
                     setTimeout(() => {
                         this.state.isTransitioning = false;
