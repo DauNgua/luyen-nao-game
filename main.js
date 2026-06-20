@@ -5,38 +5,36 @@ window.AppManager = {
 
     // Hàm 1: Mở một game con
     openGame: function(gameId) {
-        // 1. Chuyển đổi giao diện (Ẩn menu, Hiện sân khấu game)
         document.getElementById('menu-screen').classList.add('hidden');
         document.getElementById('menu-screen').classList.remove('active');
         
         document.getElementById('game-screen').classList.remove('hidden');
         document.getElementById('game-screen').classList.add('active');
 
-        // 2. Dọn sạch rác ở sân khấu cũ (nếu có)
-        document.getElementById('game-canvas').innerHTML = '<p>Đang tải game...</p>';
+        // Sân khấu chính là 'game-canvas'
+        document.getElementById('game-canvas').innerHTML = '<p style="text-align:center; margin-top:50px;">Đang tải dữ liệu mô-đun...</p>';
 
-        // 3. Tải file logic của game con vào hệ thống
         this.loadGameScript(gameId);
     },
 
     // Hàm 2: Thoát game về Menu
     quitGame: function() {
-        // 1. Dọn dẹp giao diện sân khấu
+        // Xóa giao diện
         document.getElementById('game-canvas').innerHTML = '';
 
-        // 2. Gỡ bỏ file game cũ khỏi hệ thống để giải phóng bộ nhớ
+        // Dọn dẹp logic (Tắt đếm ngược, tắt sự kiện của game con)
+        if (window.CurrentGame && typeof window.CurrentGame.cleanup === 'function') {
+            window.CurrentGame.cleanup();
+            window.CurrentGame = null;
+        }
+
+        // Xóa thẻ <script> khỏi bộ nhớ
         if (this.currentGameScript) {
             this.currentGameScript.remove();
             this.currentGameScript = null;
         }
 
-        // Nếu game con có hàm dọn dẹp riêng, gọi nó để dừng các vòng lặp thời gian
-        if (window.CurrentGame && typeof window.CurrentGame.cleanup === 'function') {
-            window.CurrentGame.cleanup();
-            window.CurrentGame = null; // Xóa sổ game con
-        }
-
-        // 3. Đảo ngược giao diện (Ẩn game, Hiện menu)
+        // Đảo ngược màn hình
         document.getElementById('game-screen').classList.add('hidden');
         document.getElementById('game-screen').classList.remove('active');
         
@@ -44,28 +42,36 @@ window.AppManager = {
         document.getElementById('menu-screen').classList.add('active');
     },
 
-    // Hàm 3: Cộng điểm từ game con gửi ra
+    // Hàm 3: Cộng điểm
     addScore: function(points) {
         this.totalScore += points;
-        document.getElementById('global-score').innerText = this.totalScore;
+        console.log("Tổng điểm hệ thống:", this.totalScore);
+        // Lưu ý: Cần thêm <span id="global-score"> vào header của bạn nếu muốn hiển thị điểm nhé
+        let scoreEl = document.getElementById('global-score');
+        if(scoreEl) scoreEl.innerText = this.totalScore;
     },
 
-    // --- HÀM NỘI BỘ: Kỹ thuật nhúng file JS động (Dynamic Script Loading) ---
+    // Hàm Nội Bộ: Nhúng Script
     loadGameScript: function(gameId) {
-        // Tạo ra một thẻ <script src="games/ten-game.js"></script>
         const script = document.createElement('script');
-        script.src = `games/${gameId}.js`;
+        // Thêm ?v=Date.now() để chống Cache trong lúc bạn code, xóa đi khi public web
+        script.src = `games/${gameId}.js?v=` + Date.now(); 
         
-        // Bắt sự kiện khi tải xong
         script.onload = function() {
-            // Khi file tải xong, gọi hàm bắt đầu của game đó
+            // Khi file tải xong, bắt buộc phải có window.CurrentGame.init()
             if (window.CurrentGame && typeof window.CurrentGame.init === 'function') {
-                window.CurrentGame.init();
+                document.getElementById('game-canvas').innerHTML = ''; // Xóa chữ "đang tải"
+                window.CurrentGame.init(); // Kích nổ game
+            } else {
+                document.getElementById('game-canvas').innerHTML = '<p style="color:red; text-align:center;">Lỗi File Mô đun: Thiếu cấu trúc window.CurrentGame!</p>';
             }
         };
 
-        // Gắn vào cuối thẻ body để chạy
+        script.onerror = function() {
+            document.getElementById('game-canvas').innerHTML = `<p style="color:red; text-align:center;">Lỗi 404: Không tìm thấy file games/${gameId}.js</p>`;
+        };
+
         document.body.appendChild(script);
-        this.currentGameScript = script; // Lưu lại để tí nữa xóa
+        this.currentGameScript = script;
     }
 };
