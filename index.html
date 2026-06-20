@@ -117,7 +117,7 @@
     <script src="main.js"></script>
 
     <script>
-        // === 1. [GIỮ NGUYÊN] Tính năng Dark Mode của Lộc ===
+        // === 1. TÍNH NĂNG DARK/LIGHT MODE HỆ THỐNG ===
         const toggleSwitch = document.getElementById('theme-toggle');
         const currentTheme = localStorage.getItem('appTheme') || 'light';
 
@@ -136,7 +136,7 @@
             }    
         });
 
-        // === 2. Đăng ký Service Worker cơ bản (Chỉ chạy 1 lần duy nhất đời đầu) ===
+        // === 2. SERVICE WORKER PWA ===
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js')
@@ -145,72 +145,79 @@
             });
         }
 
-        // === 3. [CƠ CHẾ TỰ ĐỘNG] Kiểm tra dấu vân tay của file trên Đám Mây ===
+        // === 3. KIỂM TRA BẢN CẬP NHẬT TỪ ĐÁM MÂY (ĐÃ SỬA LỖI ĐƠ GAME) ===
         async function checkAppUpdate() {
             try {
-                // Thêm mã thời gian ?t= để ép trình duyệt đâm thẳng lên đám mây lấy dữ liệu mới, bypass qua bộ nhớ đệm
                 const response = await fetch('index.html?t=' + Date.now(), { method: 'HEAD' });
-                
-                // Lấy mốc thời gian sửa đổi cuối cùng của file từ máy chủ đám mây
                 const serverVersion = response.headers.get('Last-Modified') || response.headers.get('ETag');
                 const localVersion = localStorage.getItem('app_live_version');
 
                 if (serverVersion) {
-                    // Lần đầu tiên người chơi vào game, lưu lại mốc thời gian này
                     if (!localVersion) {
                         localStorage.setItem('app_live_version', serverVersion);
                         return;
                     }
 
-                    // Nếu mốc thời gian trên đám mây khác với mốc thời gian trong máy -> BÁO CẬP NHẬT!
                     if (serverVersion !== localVersion) {
                         showUpdatePopup(serverVersion);
                     }
                 }
             } catch (error) {
-                console.log('Không thể check update (Có thể đang offline):', error);
+                console.log('Không thể check update (Có thể đang offline).');
             }
         }
 
-        // Hàm vẽ giao diện thông báo cập nhật đúng ý Lộc
+        // Hàm vẽ giao diện chuẩn Mobile/Desktop Không phá layout
         function showUpdatePopup(newVersionSignature) {
-            // Kiểm tra xem bảng thông báo đã có trên màn hình chưa, tránh hiện trùng lặp
             if (document.getElementById('pwa-update-alert')) return;
 
-            const updateNotification = document.createElement('div');
-            updateNotification.id = 'pwa-update-alert';
-            updateNotification.innerHTML = `
-                <div style="position:fixed; bottom:20px; right:20px; background:var(--bg-card, #23272a); color:var(--text-main, #f5f5f5); padding:15px; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.5); z-index:9999; border:1px solid var(--border-card, #3e3835); font-family:var(--font-game, sans-serif); max-width:250px;">
-                    <p style="margin:0 0 10px 0; font-size:14px; font-weight:bold; text-align:left;">🚀 Hệ thống có bản nâng cấp!</p>
-                    <p style="margin:0 0 12px 0; font-size:12px; color:gray; text-align:left;">Lộc vừa cập nhật tính năng mới. Làm mới giao diện ngay?</p>
-                    <div style="display:flex; gap:10px; justify-content:flex-end;">
-                        <button id="btn-skip-update" class="btn-flat" style="background:transparent; color:var(--text-main); border:1px solid var(--border-card); padding:5px 10px; cursor:pointer; border-radius:4px; font-size:12px;">Để sau</button>
-                        <button id="btn-reload-app" class="btn-flat" style="background:var(--color-primary, #e0533c); color:#fff; border:none; padding:5px 12px; cursor:pointer; border-radius:4px; font-size:12px; font-weight:bold;">Cập nhật</button>
+            const popup = document.createElement('div');
+            popup.id = 'pwa-update-alert';
+            // Cấp phép Position Fixed cho lớp bọc ngoài cùng để không phá Flexbox của Body
+            popup.style.cssText = "position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 99999; width: 90%; max-width: 340px;";
+
+            popup.innerHTML = `
+                <div style="background-color: var(--bg-card); color: var(--text-dark); border: 1px solid var(--border-line); border-radius: var(--radius-main); box-shadow: 0 15px 35px rgba(0,0,0,0.25); padding: 20px; display: flex; flex-direction: column; gap: 8px;">
+                    <div style="font-size: 16px; font-weight: 900; color: var(--text-dark);">🚀 Hệ thống có bản nâng cấp!</div>
+                    <div style="font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 10px;">Lộc vừa đẩy lên một tính năng mới. Làm mới hệ thống ngay để trải nghiệm nhé?</div>
+                    
+                    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                        <button id="btn-skip-update" style="background: transparent; color: var(--text-muted); border: 1px solid var(--border-line); padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; outline: none; transition: 0.2s;">Để sau</button>
+                        <button id="btn-reload-app" style="background: var(--primary-color); color: #fff; border: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 800; cursor: pointer; outline: none; box-shadow: 0 4px 10px rgba(0,0,0,0.15); transition: 0.2s;">🔄 Làm mới ngay</button>
                     </div>
                 </div>
             `;
-            document.body.appendChild(updateNotification);
+            document.body.appendChild(popup);
 
-            // Xử lý nút 1: Người chơi bấm Cập nhật -> Tự xóa bộ nhớ đệm cũ và tải lại trang
-            document.getElementById('btn-reload-app').addEventListener('click', async () => {
-                if ('caches' in window) {
-                    // Quét sạch toàn bộ kho lưu trữ cache PWA cũ của trình duyệt
-                    const cacheNames = await caches.keys();
-                    await Promise.all(cacheNames.map(name => caches.delete(name)));
-                }
-                // Lưu mốc thời gian mới này vào máy người chơi để không báo lại nữa
+            // Nút: Làm Mới (Cập nhật)
+            const btnReload = document.getElementById('btn-reload-app');
+            btnReload.addEventListener('click', async () => {
+                // Đổi chữ trên nút để user không bấm 2 lần
+                btnReload.innerText = "Đang dọn dẹp...";
+                btnReload.style.opacity = "0.7";
+                
+                try {
+                    // Dọn bộ nhớ đệm
+                    if ('caches' in window) {
+                        const cacheNames = await caches.keys();
+                        await Promise.all(cacheNames.map(name => caches.delete(name)));
+                    }
+                } catch(e) {} // Bỏ qua nếu có lỗi quyền để ép tải lại
+                
+                // Lưu chữ ký bản mới
                 localStorage.setItem('app_live_version', newVersionSignature);
-                // Ép trang web tải lại phiên bản mới toanh từ đám mây
-                window.location.reload();
+                
+                // Xóa tham số cache và tải lại trang gốc
+                window.location.href = window.location.origin + window.location.pathname; 
             });
 
-            // Xử lý nút 2: Người chơi bấm Để sau -> Ẩn thông báo đi, chơi tiếp bình thường bản cũ
+            // Nút: Bỏ Qua
             document.getElementById('btn-skip-update').addEventListener('click', () => {
-                updateNotification.remove();
+                popup.remove();
             });
         }
 
-        // Chạy kiểm tra bản mới ngay khi người chơi vừa mở trang web lên
+        // Chạy lúc load web
         checkAppUpdate();
     </script>
 </body>
