@@ -18,8 +18,8 @@ window.CurrentGame = {
         // Cấu hình danh sách màu
         COLORS: [
             { id: 'red', hex: '#FF3B30', name: 'ĐỎ' },
-            { id: 'blue', hex: '#007AFF', name: 'XANH DƯƠNG' },
-            { id: 'green', hex: '#34C759', name: 'XANH LÁ' },
+            { id: 'blue', hex: '#007AFF', name: 'LAM' },
+            { id: 'green', hex: '#34C759', name: 'LỤC' },
             { id: 'yellow', hex: '#FFCC00', name: 'VÀNG' },
             { id: 'purple', hex: '#AF52DE', name: 'TÍM' }
         ]
