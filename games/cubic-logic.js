@@ -8,9 +8,9 @@ window.CurrentGame = {
     // KHU VỰC CẤU HÌNH NHANH (BẠN CÓ THỂ CHỈNH SỬA Ở ĐÂY)
     // ==========================================
     config: {
-        defaultLevelTime: 15000, // Thời gian gốc mỗi màn: 15000ms (15 giây)
-        defaultBombTime: 4000,   // Thời gian nổ của Khối Bộc Phá: 4000ms (4 giây)
-        maxRotations: 2,         // Số lượt xoay tối đa mỗi màn: 2 lượt
+        defaultLevelTime: 45000, // Thời gian gốc mỗi màn: 15000ms (15 giây)
+        defaultBombTime: 12000,   // Thời gian nổ của Khối Bộc Phá: 4000ms (4 giây)
+        maxRotations: 4,         // Số lượt xoay tối đa mỗi màn: 2 lượt
         penaltyTime: 3000        // Phạt trừ bao nhiêu thời gian khi bom nổ: 3000ms (3 giây)
     },
 
