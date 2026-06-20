@@ -1,6 +1,7 @@
 /**
  * TÊN FILE: games/cubic-logic.js
- * GAME: CUBIC & LOGIC (Đếm Khối Không Gian) - GIAO DIỆN ĐỒNG BỘ THEME + MỞ RỘNG ÂM THANH
+ * GAME: CUBIC & LOGIC (Đếm Khối Không Gian)
+ * BẢN CẬP NHẬT: Tích hợp 100% Theme Hệ Thống + Tối ưu Âm Thanh Gỗ Tích Cực
  */
 
 window.CurrentGame = {
@@ -12,7 +13,7 @@ window.CurrentGame = {
         audioCtx: null 
     },
 
-    // 2. BỘ TẠO ÂM THANH GỖ (MỞ RỘNG)
+    // 2. BỘ TẠO ÂM THANH GỖ (ĐÃ SỬA LẠI TẦN SỐ ĐỂ TẠO CẢM GIÁC CHIẾN THẮNG)
     playWoodenSound: function(type) {
         if (!this.state.audioCtx) this.state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         if (this.state.audioCtx.state === 'suspended') this.state.audioCtx.resume();
@@ -22,50 +23,47 @@ window.CurrentGame = {
         osc.connect(gain); gain.connect(this.state.audioCtx.destination);
         const now = this.state.audioCtx.currentTime;
 
-        // Mô phỏng tiếng gỗ: Sóng sine/triangle kết hợp giảm âm lượng đột ngột (exponentialRamp)
         if (type === 'tick') { 
+            // Tiếng gõ bắt đầu (Nhẹ nhàng)
             osc.type = 'sine'; osc.frequency.setValueAtTime(800, now);
-            gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+            gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
             osc.start(now); osc.stop(now + 0.1);
         } 
         else if (type === 'correct') { 
-            osc.type = 'sine'; osc.frequency.setValueAtTime(600, now); osc.frequency.exponentialRampToValueAtTime(300, now + 0.2);
-            gain.gain.setValueAtTime(0.5, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
-            osc.start(now); osc.stop(now + 0.2);
+            // BẢN SỬA: Sóng âm TĂNG DẦN (500Hz -> 800Hz) tạo cảm giác vui vẻ, ăn điểm
+            osc.type = 'sine'; osc.frequency.setValueAtTime(500, now); osc.frequency.exponentialRampToValueAtTime(800, now + 0.15);
+            gain.gain.setValueAtTime(0.5, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+            osc.start(now); osc.stop(now + 0.15);
         } 
         else if (type === 'error') { 
-            osc.type = 'triangle'; osc.frequency.setValueAtTime(250, now); osc.frequency.exponentialRampToValueAtTime(100, now + 0.2);
-            gain.gain.setValueAtTime(0.6, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
-            osc.start(now); osc.stop(now + 0.2);
+            // Sóng âm HẠ DẦN tạo cảm giác sai/hết mạng
+            osc.type = 'triangle'; osc.frequency.setValueAtTime(300, now); osc.frequency.exponentialRampToValueAtTime(100, now + 0.25);
+            gain.gain.setValueAtTime(0.6, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+            osc.start(now); osc.stop(now + 0.25);
         }
-        else if (type === 'start') { // Âm thanh mộc bản chuỗi tăng dần
+        else if (type === 'start') { 
+            // Chuông chuỗi (Arpeggio)
             osc.type = 'sine';
-            osc.frequency.setValueAtTime(400, now);
-            osc.frequency.setValueAtTime(600, now + 0.1);
-            osc.frequency.setValueAtTime(800, now + 0.2);
-            gain.gain.setValueAtTime(0.4, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+            osc.frequency.setValueAtTime(400, now); osc.frequency.setValueAtTime(600, now + 0.1); osc.frequency.setValueAtTime(800, now + 0.2);
+            gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
             osc.start(now); osc.stop(now + 0.4);
         }
-        else if (type === 'gold_appear') { // Tiếng gõ sáng, vang khi Khối Vàng xuất hiện
+        else if (type === 'gold_appear') { 
+            // Vang sáng
             osc.type = 'triangle'; osc.frequency.setValueAtTime(1200, now);
-            gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+            gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
             osc.start(now); osc.stop(now + 0.3);
         }
-        else if (type === 'gold_correct') { // Tiếng gõ đôi ăn điểm nhân 2
+        else if (type === 'gold_correct') { 
+            // Tít tít kép âm cao (Double Score)
             osc.type = 'sine'; 
             osc.frequency.setValueAtTime(800, now); osc.frequency.setValueAtTime(1000, now + 0.15);
             gain.gain.setValueAtTime(0.5, now); gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
             osc.start(now); osc.stop(now + 0.3);
         }
-        else if (type === 'gameover') { // Cộc.. cộc.. trầm buồn
-            osc.type = 'triangle'; 
-            osc.frequency.setValueAtTime(200, now); osc.frequency.setValueAtTime(150, now + 0.2);
-            gain.gain.setValueAtTime(0.6, now); gain.gain.linearRampToValueAtTime(0.01, now + 0.5);
-            osc.start(now); osc.stop(now + 0.5);
-        }
     },
 
-    // 3. KHỞI TẠO GAME VÀ GIAO DIỆN (Sử dụng 100% biến CSS từ hệ thống)
+    // 3. KHỞI TẠO GAME VÀ GIAO DIỆN (Tuyệt đối tuân thủ biến hệ thống của bạn)
     init: function() {
         const container = document.getElementById('game-canvas');
         if (!container) return;
@@ -74,27 +72,27 @@ window.CurrentGame = {
             <style>
                 .cb-wrapper, .cb-wrapper * { box-sizing: border-box; }
                 
-                /* Kế thừa hoàn toàn từ thẻ game-canvas tổng, nên để nền trong suốt */
+                /* Kế thừa giao diện thẻ chứa từ Lộc */
                 .cb-wrapper {
-                    width: 100%; height: 100%; padding: 25px 15px;
+                    width: 100%; height: 100%; padding: 20px;
                     display: flex; flex-direction: column; align-items: center; justify-content: center;
                     color: var(--text-dark); user-select: none;
                 }
                 
-                /* Layout */
                 .cb-screen { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 500px;}
                 .cb-screen.active { display: flex; }
                 
-                /* Khối Header UI */
+                /* Tiêu đề & Thông số chơi */
                 .cb-header { display: flex; justify-content: space-between; font-weight: 800; margin-bottom: 15px; font-size: 14px; width: 100%; color: var(--text-muted); }
                 .cb-score-text { color: var(--primary-color); font-size: 16px;}
                 
-                /* Thanh Timer chuẩn hệ thống */
+                /* Thanh Timer */
                 .cb-timer-bar { width: 100%; height: 6px; background: var(--border-line); border-radius: 4px; margin-bottom: 20px; overflow: hidden; }
                 .cb-timer-fill { height: 100%; background: var(--primary-color); width: 100%; transition: width 0.05s linear; }
                 
-                /* Tiêu đề câu hỏi */
+                /* Câu hỏi */
                 .cb-question { font-size: 18px; font-weight: 800; margin-bottom: 15px; line-height: 1.4; color: var(--text-dark); text-align: center;}
+                .cb-question.is-gold { color: #f5a623; } /* Cố định màu vàng cam cho câu hỏi khối vàng */
                 
                 /* Sân khấu 3D */
                 .cb-canvas-box {
@@ -104,36 +102,40 @@ window.CurrentGame = {
                 .cb-iso-scene { position: relative; width: 0; height: 0; }
                 .cb-cube { position: absolute; transform: translate(-50%, -50%); transition: transform 0.3s; filter: drop-shadow(0px 8px 4px rgba(0,0,0,0.15)); }
                 
-                /* Nút trắc nghiệm đồng bộ Theme */
-                .cb-grid { width: 100%; display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
-                .cb-wrapper .btn-flat {
-                    background: var(--bg-card); color: var(--text-dark); 
-                    border: 2px solid var(--border-line); padding: 15px; font-size: 20px; font-weight: 800;
-                    border-radius: var(--radius-main); cursor: pointer; transition: all 0.2s; outline: none;
-                    box-shadow: 0 4px 6px rgba(0,0,0,0.02);
-                }
-                .cb-wrapper .btn-flat:hover { 
-                    background: var(--primary-color); color: #fff; border-color: var(--primary-color); 
-                    transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.1);
-                }
-                .cb-wrapper .btn-flat:active { transform: translateY(0); }
+                /* ĐIỂU KHIỂN MÀU CỦA KHỐI 3D BẰNG BIẾN HỆ THỐNG THEME */
+                .cb-cube svg path.face-top { fill: #e2e8f0; transition: fill 0.3s ease;}
+                .cb-cube svg path.face-left { fill: #cbd5e0; transition: fill 0.3s ease;}
+                .cb-cube svg path.face-right { fill: #a0aec0; transition: fill 0.3s ease;}
+
+                [data-theme="dark"] .cb-cube svg path.face-top { fill: #4a5568; }
+                [data-theme="dark"] .cb-cube svg path.face-left { fill: #2d3748; }
+                [data-theme="dark"] .cb-cube svg path.face-right { fill: #1a202c; }
+
+                /* Màu khối vàng */
+                .cb-cube.is-gold svg path.face-top { fill: #fbd38d !important; }
+                .cb-cube.is-gold svg path.face-left { fill: #ed8936 !important; }
+                .cb-cube.is-gold svg path.face-right { fill: #dd6b20 !important; }
                 
-                /* Style cho nút Khối Vàng */
-                .cb-btn-gold { border-color: #f5a623 !important; color: #f5a623 !important; }
-                .cb-btn-gold:hover { background: #f5a623 !important; color: #fff !important; }
+                /* Bố cục nút bấm (Không can thiệp vào background/hover của hệ thống) */
+                .cb-grid { width: 100%; display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
+                
+                /* Tái sử dụng .btn-flat của bạn. Chỉ sửa đổi cho khối vàng bằng viền bọc, không chạm vào màu nền */
+                .cb-btn-gold { border: 2px solid #f5a623; color: #f5a623; background-color: var(--bg-card); }
+                /* Hủy hiệu ứng hover nền tĩnh trên điện thoại gây dính kẹt */
+                @media (hover: hover) { .cb-btn-gold:hover { background-color: #f5a623; color: #fff; } }
             </style>
 
             <div class="cb-wrapper" id="cb-wrapper">
                 
                 <!-- MENU BẮT ĐẦU -->
                 <div id="cb-menu-screen" class="cb-screen active">
-                    <h1 style="font-size: 32px; margin-bottom: 10px; color: var(--text-dark);">Đếm Khối & Tìm Từ</h1>
+                    <h1 style="font-size: 32px; margin-bottom: 10px; color: var(--text-dark);">Đếm Khối Không Gian</h1>
                     <p style="color: var(--text-muted); margin-bottom: 30px; font-size: 15px; line-height: 1.6; text-align: center;">
-                        Đọc kỹ yêu cầu và đếm số khối trên màn hình.<br>
+                        Kiểm tra tư duy Không gian 3D.<br>
                         Giao diện có thể đánh lừa thị giác của bạn.<br>
                         <span style="color: #f5a623; font-weight: bold;">(Khối Vàng = Nhân Đôi Điểm)</span>
                     </p>
-                    <button class="btn-flat" onclick="window.CurrentGame.startGame()" style="background: var(--primary-color); color: white; border:none;">BẮT ĐẦU CHƠI</button>
+                    <button class="btn-flat" onclick="window.CurrentGame.startGame()">BẮT ĐẦU NGAY</button>
                 </div>
 
                 <!-- KHU VỰC CHƠI -->
@@ -157,7 +159,7 @@ window.CurrentGame = {
 
                 <!-- GAME OVER -->
                 <div id="cb-gameover-screen" class="cb-screen">
-                    <h2 style="color: var(--primary-color); font-size: 36px; margin-bottom: 10px;">HẾT MẠNG</h2>
+                    <h2 style="color: var(--primary-color); font-size: 36px; margin-bottom: 10px;">KẾT THÚC</h2>
                     <p style="color: var(--text-muted); font-size: 18px; margin-bottom: 30px;">Tổng điểm: <strong id="cb-final-score" style="color: var(--text-dark); font-size: 28px;">0</strong></p>
                     <button class="btn-flat" onclick="window.CurrentGame.startGame()">CHƠI LẠI TỪ ĐẦU</button>
                 </div>
@@ -168,7 +170,7 @@ window.CurrentGame = {
 
     // 4. LUỒNG TRÒ CHƠI 
     startGame: function() {
-        this.playWoodenSound('start'); // Âm thanh chào mừng
+        this.playWoodenSound('start'); 
         this.state.score = 0; this.state.level = 1; this.state.lives = 3;
         this.state.isPlaying = true; this.state.isTransitioning = false;
         
@@ -220,7 +222,7 @@ window.CurrentGame = {
         if (Math.random() < 0.25) { 
             this.state.isGoldenRound = true;
             this.state.cubes[Math.floor(Math.random() * this.state.cubes.length)].isGold = true;
-            setTimeout(() => this.playWoodenSound('gold_appear'), 100); // Kêu cộc khi khối vàng rơi xuống
+            setTimeout(() => this.playWoodenSound('gold_appear'), 100); 
         }
 
         this.state.cubes.sort((a, b) => (a.x + a.y + a.z) - (b.x + b.y + b.z));
@@ -231,28 +233,22 @@ window.CurrentGame = {
         sceneEl.innerHTML = '';
         
         const tileW = 44, tileH = 24, zHeight = 26; 
-
-        // Nhận diện Theme sáng tối để vẽ màu mảng tối của SVG
-        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
         
         this.state.cubes.forEach(c => {
             let screenX = (c.x - c.y) * (tileW / 2);
             let screenY = (c.x + c.y) * (tileH / 2) - (c.z * zHeight);
-            
-            // Phối màu hòa hợp với UI Light/Dark
-            let colorTop = c.isGold ? '#fbd38d' : (isDark ? '#4a5568' : '#e2e8f0'); 
-            let colorLeft = c.isGold ? '#ed8936' : (isDark ? '#2d3748' : '#cbd5e0');
-            let colorRight = c.isGold ? '#dd6b20' : (isDark ? '#1a202c' : '#a0aec0');
 
             let svgCube = document.createElement('div');
-            svgCube.className = 'cb-cube';
+            // Bản sửa: Gắn class is-gold thay vì code cứng màu vào Javascript
+            svgCube.className = `cb-cube ${c.isGold ? 'is-gold' : ''}`;
             svgCube.style.left = `${screenX}px`; svgCube.style.top = `${screenY}px`;
             
+            // Render giao diện thông qua class CSS, tách bạch UI và Logic
             svgCube.innerHTML = `
                 <svg viewBox="0 0 100 115" width="${tileW}" height="50">
-                    <path d="M50 0 L100 28 L50 56 L0 28 Z" fill="${colorTop}"/>
-                    <path d="M0 28 L50 56 L50 115 L0 87 Z" fill="${colorLeft}"/>
-                    <path d="M100 28 L50 56 L50 115 L100 87 Z" fill="${colorRight}"/>
+                    <path class="face-top" d="M50 0 L100 28 L50 56 L0 28 Z"/>
+                    <path class="face-left" d="M0 28 L50 56 L50 115 L0 87 Z"/>
+                    <path class="face-right" d="M100 28 L50 56 L50 115 L100 87 Z"/>
                 </svg>
             `;
             sceneEl.appendChild(svgCube);
@@ -272,26 +268,33 @@ window.CurrentGame = {
             ans = this.state.cubes.filter(c => cSet.has(`${c.x},${c.y},${c.z + 1}`)).length;
         } 
         else if (qType === 'GOLD') {
-            qText = "Khối Vàng CHẠM vào bao nhiêu khối xám?";
+            qText = "Khối Vàng CHẠM MẶT với bao nhiêu khối?";
             let gc = this.state.cubes.find(c => c.isGold);
             ans = this.state.cubes.filter(c => !c.isGold && (Math.abs(c.x-gc.x)+Math.abs(c.y-gc.y)+Math.abs(c.z-gc.z) === 1)).length;
         }
 
         this.state.correctAnswer = ans;
-        document.getElementById('cb-question-text').innerText = qText;
-        if(this.state.isGoldenRound) document.getElementById('cb-question-text').style.color = '#f5a623';
-        else document.getElementById('cb-question-text').style.color = 'var(--text-dark)';
+        
+        const qEl = document.getElementById('cb-question-text');
+        qEl.innerText = qText;
+        if(this.state.isGoldenRound) qEl.classList.add('is-gold'); else qEl.classList.remove('is-gold');
 
         let opts = new Set([ans]);
-        while(opts.size < 4) { let f = ans + Math.floor(Math.random()*5)-2; if (f >= 0 && f !== ans) opts.add(f); }
+        while(opts.size < 4) { let f = ans + Math.floor(Math.random()*5)-2; if (f > 0 && f !== ans) opts.add(f); }
         let arrOpts = Array.from(opts).sort(() => Math.random() - 0.5);
 
         const btnBox = document.getElementById('cb-buttons');
         btnBox.innerHTML = '';
         arrOpts.forEach(opt => {
             const btn = document.createElement('button');
-            btn.className = 'btn-flat';
-            if (qType === 'GOLD') btn.classList.add('cb-btn-gold');
+            // Tuyệt đối sử dụng class .btn-flat của file style.css
+            btn.className = `btn-flat ${qType === 'GOLD' ? 'cb-btn-gold' : ''}`;
+            
+            // Xóa màu trắng mặc định nếu không phải khối vàng (để nút Flat lấy màu biến hệ thống)
+            if(qType !== 'GOLD') btn.style.backgroundColor = 'var(--bg-card)';
+            if(qType !== 'GOLD') btn.style.color = 'var(--text-dark)';
+            if(qType !== 'GOLD') btn.style.border = '2px solid var(--border-line)';
+            
             btn.innerText = opt;
             btn.onclick = () => this.handleChoice(opt);
             btnBox.appendChild(btn);
@@ -306,7 +309,6 @@ window.CurrentGame = {
         if (selected === this.state.correctAnswer) {
             this.state.score += (10 + this.state.level) * (this.state.isGoldenRound ? 2 : 1);
             this.state.level++;
-            // Chơi âm thanh khác nhau nếu là khối vàng
             if (this.state.isGoldenRound) this.playWoodenSound('gold_correct');
             else this.playWoodenSound('correct');
         } else {
@@ -314,8 +316,7 @@ window.CurrentGame = {
             this.state.lives--;
         }
 
-        // Tạm mờ sân khấu tạo hiệu ứng chuyển cảnh mềm mại
-        document.getElementById('cb-game-area').style.opacity = '0.5';
+        document.getElementById('cb-game-area').style.opacity = '0.4';
         setTimeout(() => {
             document.getElementById('cb-game-area').style.opacity = '1';
             this.state.isTransitioning = false;
@@ -340,7 +341,8 @@ window.CurrentGame = {
                     this.state.isTransitioning = true;
                     this.playWoodenSound('error');
                     this.state.lives--; 
-                    setTimeout(() => { this.state.isTransitioning = false; this.nextRound(); }, 300);
+                    document.getElementById('cb-game-area').style.opacity = '0.4';
+                    setTimeout(() => { document.getElementById('cb-game-area').style.opacity = '1'; this.state.isTransitioning = false; this.nextRound(); }, 300);
                 }
             }
         }, tick);
@@ -355,7 +357,7 @@ window.CurrentGame = {
     gameOver: function() {
         this.state.isPlaying = false;
         clearInterval(this.state.timerInterval);
-        this.playWoodenSound('gameover');
+        this.playWoodenSound('error');
         
         document.getElementById('cb-game-area').classList.remove('active');
         document.getElementById('cb-gameover-screen').classList.add('active');
