@@ -116,9 +116,8 @@
     <!-- TỆP ĐIỀU PHỐI (Chứa hàm đóng mở game) -->
     <script src="main.js"></script>
 
-    <!-- KHỞI ĐỘNG PWA & NÚT GẠT ĐEN/TRẮNG -->
     <script>
-        // Kích hoạt tính năng Light/Dark Theme (Ghi nhớ cấu hình của User qua LocalStorage)
+        // === [GIỮ NGUYÊN] Kích hoạt tính năng Light/Dark Theme của Lộc ===
         const toggleSwitch = document.getElementById('theme-toggle');
         const currentTheme = localStorage.getItem('appTheme') || 'light';
 
@@ -137,12 +136,42 @@
             }    
         });
 
-        // Đăng ký Service Worker cho tính năng Cài đặt Web App (PWA) Offline
+        // === [NÂNG CẤP] Đăng ký Service Worker phiên bản tự động báo cập nhật ===
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
-                .then(() => console.log('PWA ServiceWorker đã khởi chạy!'))
-                .catch(err => console.log('Đang chạy Local, không cần lo lỗi SW.'));
+                navigator.serviceWorker.register('./sw.js').then(reg => {
+                    console.log('PWA ServiceWorker đã khởi chạy!');
+                    
+                    // Lắng nghe xem trên đám mây có file sw.js mới hay không
+                    reg.addEventListener('updatefound', () => {
+                        const newWorker = reg.installing;
+                        newWorker.addEventListener('statechange', () => {
+                            // Khi file mới đã được tải và cài đặt xong vào bộ nhớ đệm ẩn
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                
+                                // Tạo một hộp thông báo phẳng (Flat) nổi lên góc màn hình
+                                const updateNotification = document.createElement('div');
+                                updateNotification.innerHTML = `
+                                    <div style="position:fixed; bottom:20px; right:20px; background:var(--bg-card, #23272a); color:var(--text-main, #f5f5f5); padding:15px; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.3); z-index:9999; border:1px solid var(--border-card, #3e3835); text-align:center; font-family:var(--font-game, sans-serif);">
+                                        <p style="margin:0 0 10px 0; font-size:14px; font-weight:bold;">🚀 Hệ thống có cập nhật mới!</p>
+                                        <button id="btn-reload-app" class="btn-flat" style="background:var(--color-primary, #e0533c); color:#fff; border:none; padding:8px 16px; cursor:pointer; border-radius:4px; font-weight:bold;">Cập nhật ngay</button>
+                                    </div>
+                                `;
+                                document.body.appendChild(updateNotification);
+
+                                // Khi người dùng bấm nút "Cập nhật ngay"
+                                document.getElementById('btn-reload-app').addEventListener('click', () => {
+                                    // Ra lệnh cho Service Worker mới lập tức kích hoạt đè lên bản cũ
+                                    newWorker.postMessage({ action: 'skipWaiting' });
+                                    // Reload lại trang web sạch sẽ từ đám mây
+                                    window.location.reload();
+                                });
+                            }
+                        });
+                    });
+                }).catch(err => {
+                    console.log('Đang chạy Local, không cần lo lỗi SW.');
+                });
             });
         }
     </script>
