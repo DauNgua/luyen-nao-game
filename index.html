@@ -102,28 +102,25 @@
     </main>
 
     <!-- MÀN HÌNH 2: GIAO DIỆN KHI BẤM VÀO CHƠI MỘT GAME CON -->
-    <main id="game-screen" class="screen hidden">
-        <div class="game-toolbar">
-            <button class="btn-back" onclick="AppManager.quitGame()">← Thoát Ra</button>
-        </div>
+    <main id="game-screen" class="screen hidden" style="position: relative;">
         <div class="game-status-bar">
             <div class="status-left">
-                <button id="btn-pause-game" class="status-btn" title="Tạm dừng">⏸</button>
+                <button id="btn-pause-game" class="status-btn" title="Tạm dừng" onclick="window.GameInterface.showPauseMenu()">⏸</button>
             </div>
-            
-            <div class="status-right">
-                <div class="status-item">TIME: <span id="global-time">0:00</span></div>
-                <div class="status-item">SCORE: <span id="global-score">0</span></div>
-                
-                <div id="global-lives" class="status-lives">
-                    <span class="dot active"></span>
-                    <span class="dot active"></span>
-                    <span class="dot active"></span>
+            </div>
+
+        <div id="game-canvas"></div>
+
+        <div id="pause-overlay" class="hidden">
+            <div class="pause-menu">
+                <h2 class="pause-title">TẠM DỪNG</h2>
+                <div class="pause-actions">
+                    <button class="btn-flat btn-pause-action" onclick="window.GameInterface.resumeGame()">▶ Tiếp tục</button>
+                    <button class="btn-flat btn-pause-action" onclick="window.GameInterface.restartGame()">🔄 Chơi lại</button>
+                    <button class="btn-flat btn-pause-action btn-danger" onclick="AppManager.quitGame(); window.GameInterface.hidePauseMenu();">🏠 Về Menu chính</button>
                 </div>
             </div>
         </div>
-        <!-- Sân khấu đen 3:2 trống rỗng (Sẽ được file .js bơm code vào) -->
-        <div id="game-canvas"></div>
     </main>
 
     <!-- TỆP ĐIỀU PHỐI (Chứa hàm đóng mở game) -->
