@@ -1,5 +1,7 @@
 // ==========================================
 // 🟢 DÁN ĐOẠN NÀY LÊN TRÊN CÙNG CỦA FILE main.js 🟢
+// ==========================================
+// 🟢 DÁN ĐOẠN NÀY LÊN TRÊN CÙNG CỦA FILE main.js 🟢
 window.GameInterface = {
     // 1. Hàm cập nhật điểm
     updateScore: function(points) {
@@ -28,7 +30,7 @@ window.GameInterface = {
         this.updateScore(0);
         this.updateTime("0:00");
         this.updateLives(3); // Mặc định reset về 3 mạng
-    }
+    }, // 👈 CHÍNH LÀ DẤU PHẨY NÀY! Bạn vừa rồi đã thiếu nó ở đây.
 
     // 5. Hiện Menu Tạm Dừng
     showPauseMenu: function() {
@@ -64,6 +66,7 @@ window.GameInterface = {
         }
     }
 };
+// ==========================================
 // ==========================================
 
 // Khởi tạo Hệ điều hành quản lý chung
