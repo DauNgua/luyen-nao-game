@@ -45,7 +45,10 @@ window.AppManager = {
         document.getElementById('game-screen').classList.remove('hidden');
         document.getElementById('game-screen').classList.add('active');
 
-        openGame: function(gameId)
+        // Bổ sung: Reset điểm/thời gian về 0 mỗi khi mở game mới
+        if (window.GameInterface) {
+            window.GameInterface.resetStatus();
+        }
 
         // Sân khấu chính là 'game-canvas'
         document.getElementById('game-canvas').innerHTML = '<p style="text-align:center; margin-top:50px;">Đang tải dữ liệu mô-đun...</p>';
