@@ -106,7 +106,22 @@
         <div class="game-toolbar">
             <button class="btn-back" onclick="AppManager.quitGame()">← Thoát Ra</button>
         </div>
-        
+        <div class="game-status-bar">
+            <div class="status-left">
+                <button id="btn-pause-game" class="status-btn" title="Tạm dừng">⏸</button>
+            </div>
+            
+            <div class="status-right">
+                <div class="status-item">TIME: <span id="global-time">0:00</span></div>
+                <div class="status-item">SCORE: <span id="global-score">0</span></div>
+                
+                <div id="global-lives" class="status-lives">
+                    <span class="dot active"></span>
+                    <span class="dot active"></span>
+                    <span class="dot active"></span>
+                </div>
+            </div>
+        </div>
         <!-- Sân khấu đen 3:2 trống rỗng (Sẽ được file .js bơm code vào) -->
         <div id="game-canvas"></div>
     </main>
