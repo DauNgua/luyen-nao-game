@@ -40,6 +40,10 @@ self.addEventListener('activate', event => {
 
 // Sự kiện Fetch: Trả về file từ Cache nếu mất mạng (Cache-First Strategy)
 self.addEventListener('fetch', event => {
+    // 🟢 THÊM DÒNG NÀY ĐỂ FIX LỖI "HEAD IS UNSUPPORTED": 
+    // Bỏ qua không cache những request không phải là GET (ví dụ: HEAD, POST)
+    if (event.request.method !== 'GET') return;
+
     event.respondWith(
         caches.match(event.request)
         .then(response => {
