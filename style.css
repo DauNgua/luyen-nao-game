@@ -302,3 +302,95 @@ input:checked + .slider-round:before {
 .btn-back:active { 
     transform: scale(0.95); 
 }
+
+
+
+/* ========================================================
+   THANH THÔNG SỐ GAME ĐỒNG NHẤT (GLOBAL STATUS BAR)
+   ======================================================== */
+
+.game-status-bar {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    
+    /* Sử dụng các biến màu hệ thống để tự động đổi màu Trắng/Đen */
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-line);
+    border-bottom: none; /* Bỏ viền dưới để liền mạch với canvas bên dưới */
+    
+    /* Bo góc góc trên để khớp với bo góc hệ thống */
+    border-top-left-radius: var(--radius-main);
+    border-top-right-radius: var(--radius-main);
+    
+    padding: 12px 20px;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Ép lại khung chơi game bên dưới để không bị bo góc phía trên (tránh bị hở nền) */
+#game-canvas {
+    border-top-left-radius: 0px !important;
+    border-top-right-radius: 0px !important;
+    border-top: none !important; /* Tránh bị trùng 2 đường viền liên tiếp */
+}
+
+/* --- CẤU TRÚC BÊN TRONG --- */
+.status-left {
+    display: flex;
+    align-items: center;
+}
+
+.status-right {
+    display: flex;
+    align-items: center;
+    gap: 25px; /* Khoảng cách rộng rãi giữa Time, Score và Mạng */
+}
+
+/* --- NÚT TẠM DỪNG (FLAT STYLE) --- */
+.status-btn {
+    background: transparent;
+    border: none;
+    color: var(--primary-color);
+    font-size: 16px;
+    font-weight: 900;
+    cursor: pointer;
+    padding: 4px 8px;
+    transition: transform 0.1s ease;
+}
+.status-btn:active {
+    transform: scale(0.85); /* Hiệu ứng nhấn nút lún xuống */
+}
+
+/* --- CÁC Ô HIỂN THỊ CHỮ (TIME, SCORE) --- */
+.status-item {
+    font-size: 14px;
+    font-weight: 800; /* Nét chữ đậm chuẩn hệ thống */
+    color: var(--text-dark);
+    letter-spacing: 0.5px;
+}
+
+.status-item span {
+    color: var(--primary-color); /* Làm nổi bật các con số bằng màu Cam/Đỏ thương hiệu */
+}
+
+/* --- HỆ THỐNG CHẤM TRÒN HIỂN THỊ MẠNG (LIVES DẠNG FLAT) --- */
+.status-lives {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+/* Chấm tròn khi bị mất mạng (Màu xám mờ) */
+.status-lives .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: var(--border-line); 
+    transition: background-color 0.2s ease;
+}
+
+/* Chấm tròn khi còn mạng (Sáng màu Cam/Đỏ) */
+.status-lives .dot.active {
+    background-color: var(--primary-color);
+}
