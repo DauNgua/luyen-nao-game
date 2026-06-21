@@ -3,34 +3,35 @@
 // ==========================================
 // 🟢 DÁN ĐOẠN NÀY LÊN TRÊN CÙNG CỦA FILE main.js 🟢
 window.GameInterface = {
-    // 1. Hàm cập nhật điểm
     updateScore: function(points) {
-        document.getElementById('global-score').innerText = points;
+        const el = document.getElementById('global-score');
+        if (el) el.innerText = points; // Chỉ cập nhật nếu thẻ thực sự tồn tại
     },
     
-    // 2. Hàm cập nhật thời gian (Game con tự format chuỗi "0:45" rồi đẩy ra đây)
     updateTime: function(timeString) {
-        document.getElementById('global-time').innerText = timeString;
+        const el = document.getElementById('global-time');
+        if (el) el.innerText = timeString; // Bỏ qua nếu null
     },
     
-    // 3. Hàm cập nhật mạng (Game con truyền vào số mạng còn lại, ví dụ: 2)
     updateLives: function(remainingLives) {
         const dots = document.querySelectorAll('#global-lives .dot');
-        dots.forEach((dot, index) => {
-            if (index < remainingLives) {
-                dot.classList.add('active'); // Còn mạng thì sáng
-            } else {
-                dot.classList.remove('active'); // Mất mạng thì mờ đi
-            }
-        });
+        if (dots.length > 0) {
+            dots.forEach((dot, index) => {
+                if (index < remainingLives) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
+            });
+        }
     },
 
-    // 4. Hàm Reset (Đưa mọi thứ về số 0 khi bắt đầu game mới)
     resetStatus: function() {
         this.updateScore(0);
         this.updateTime("0:00");
-        this.updateLives(3); // Mặc định reset về 3 mạng
-    }, // 👈 CHÍNH LÀ DẤU PHẨY NÀY! Bạn vừa rồi đã thiếu nó ở đây.
+        this.updateLives(3);
+    },
+
 
     // 5. Hiện Menu Tạm Dừng
     showPauseMenu: function() {
