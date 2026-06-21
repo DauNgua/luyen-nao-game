@@ -1,49 +1,46 @@
-// ========================================================
-// MODULE BĂNG GAME: TRÍ NHỚ MA TRẬN CỔ ĐIỂN (FLAT DESIGN)
-// Kế thừa 100% Biến hệ thống từ style.css của Lộc
-// ========================================================
+// =========================================
+// MODULE GAME: TRÍ NHỚ MA TRẬN (CỔ ĐIỂN)
+// Tích hợp: GameInterface, Flat Design, Động cơ Âm thanh
+// =========================================
 
-(function() {
-
-    // --- 1. MÁY TỔNG HỢP ÂM THANH THUẦN CODE (Web Audio API) ---
-    const SfxEngine = {
+window.CurrentGame = (function() {
+    
+    // --- 1. MÁY PHÁT ÂM THANH (AUDIO ENGINE) ---
+    const AudioEngine = {
         ctx: new (window.AudioContext || window.webkitAudioContext)(),
         
         playTone: function(freq, type, duration, vol) {
             if (this.ctx.state === 'suspended') this.ctx.resume();
             const osc = this.ctx.createOscillator();
-            const gain = this.ctx.createGain();
+            const gainNode = this.ctx.createGain();
             
             osc.type = type;
             osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
             
-            gain.gain.setValueAtTime(vol, this.ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+            gainNode.gain.setValueAtTime(vol, this.ctx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
             
-            osc.connect(gain);
-            gain.connect(this.ctx.destination);
+            osc.connect(gainNode);
+            gainNode.connect(this.ctx.destination);
+            
             osc.start();
             osc.stop(this.ctx.currentTime + duration);
         },
 
-        // Tiếng chớp sáng đề bài
-        flash: () => SfxEngine.playTone(580, 'sine', 0.18, 0.08),
-        
-        // YÊU CẦU 1: Tiếng ấn đúng êm ái, giống nhịp gõ phím cơ/click gỗ (Triangle wave)
-        correct: () => SfxEngine.playTone(480, 'triangle', 0.09, 0.12),
-        
-        // YÊU CẦU 1: Tiếng ấn sai siêu nhẹ, trầm mờ giống tiếng "trượt tay"
-        wrong: () => SfxEngine.playTone(160, 'sine', 0.15, 0.04),
-        
-        reveal: () => SfxEngine.playTone(420, 'sine', 0.3, 0.06),
-        winTone: () => {
-            setTimeout(() => SfxEngine.playTone(523, 'triangle', 0.12, 0.1), 0);
-            setTimeout(() => SfxEngine.playTone(659, 'triangle', 0.12, 0.1), 100);
-            setTimeout(() => SfxEngine.playTone(783, 'triangle', 0.25, 0.12), 200);
-        }
+        sfxFlash: () => AudioEngine.playTone(600, 'sine', 0.15, 0.05),       
+        // Tiếng Click đúng: Nốt hơi cao, dạng triangle tạo cảm giác gõ "tốc" nhẹ nhàng
+        sfxCorrect: () => AudioEngine.playTone(550, 'triangle', 0.1, 0.1),   
+        // Tiếng Click sai: Nốt trầm, êm, dạng sine không gây chói tai
+        sfxWrong: () => AudioEngine.playTone(200, 'sine', 0.2, 0.08),       
+        sfxLevelUp: function() {
+            setTimeout(() => this.playTone(400, 'sine', 0.1, 0.05), 0);
+            setTimeout(() => this.playTone(600, 'sine', 0.1, 0.05), 100);
+            setTimeout(() => this.playTone(800, 'sine', 0.2, 0.1), 200);
+        },
+        sfxGameOver: () => AudioEngine.playTone(150, 'triangle', 0.4, 0.1) 
     };
 
-    // --- 2. QUẢN LÝ TRẠNG THÁI NỘI BỘ ---
+    // --- 2. QUẢN LÝ TRẠNG THÁI (STATE) ---
     let state = {
         level: 1,
         lives: 3,
@@ -52,315 +49,317 @@
         targetCount: 3,
         sequence: [],
         playerClicks: [],
-        isInputAllowed: false,
-        wrongClicks: 0,
+        isPlayerTurn: false,
+        wrongClicksInRound: 0,
         consecutiveFails: 0,
-        timers: []
+        gameTimeouts: [] 
     };
 
-    const stage = document.getElementById('game-canvas');
-
-    function setSafeTimeout(cb, delay) {
-        let id = setTimeout(cb, delay);
-        state.timers.push(id);
+    // Hàm tiện ích: Bọc setTimeout để dọn dẹp khi thoát game
+    function setGameTimeout(callback, delay) {
+        let id = setTimeout(callback, delay);
+        state.gameTimeouts.push(id);
         return id;
     }
 
-    // YÊU CẦU 2: Thuật toán Checkpoint lùi 3 màn
-    function loadCheckpoint() {
-        let highestReached = parseInt(localStorage.getItem('mm_matrix_peak_lvl')) || 1;
-        state.level = Math.max(1, highestReached - 3);
-        state.score = 0;
-        state.lives = 3;
-        state.consecutiveFails = 0;
-    }
-
-    // --- 3. BƠM GIAO DIỆN CHUẨN FLAT HIỆN ĐẠI ---
-    function injectGameDOM() {
-        stage.innerHTML = `
+    // --- 3. ĐỒNG BỘ GIAO DIỆN (UI INJECTION) ---
+    function renderUI() {
+        const canvas = document.getElementById('game-canvas');
+        canvas.innerHTML = `
             <style>
-                .mem-hud {
-                    width: 100%; max-width: 380px; display: flex; justify-content: space-between;
-                    margin-bottom: 12px; font-weight: 800; font-size: 15px; color: var(--text-muted);
+                .matrix-container {
+                    display: flex; flex-direction: column; align-items: center; justify-content: center;
+                    width: 100%; height: 100%;
                 }
-                .mem-hud span { color: var(--text-dark); font-weight: 900; }
-                .mem-hud .accent { color: var(--primary-color); }
-
-                .mem-status {
-                    font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;
-                    color: var(--primary-color); margin-bottom: 18px; min-height: 20px; text-align: center;
+                .matrix-status {
+                    font-family: 'Nunito', sans-serif;
+                    font-size: 16px; font-weight: 800; text-transform: uppercase;
+                    letter-spacing: 1px; margin-bottom: 20px; text-align: center;
+                    color: var(--text-dark); transition: color 0.3s;
                 }
-
-                .mem-grid-container {
-                    width: 100%; max-width: 340px; aspect-ratio: 1/1;
-                    display: grid; gap: 12px; margin: 0 auto;
+                .matrix-grid { 
+                    display: grid; gap: 8px; width: 100%; max-width: 320px; aspect-ratio: 1/1; 
                 }
-
-                /* THIẾT KẾ TILE FLAT chuẩn bo góc 12px của Lộc */
-                .mem-tile {
-                    background-color: var(--img-placeholder);
-                    border: 2px solid var(--border-line);
-                    border-radius: 12px; cursor: pointer;
-                    transition: transform 0.1s ease, background-color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+                /* THIẾT KẾ FLAT DESIGN TỐI GIẢN */
+                .mem-tile { 
+                    background-color: var(--border-line); /* Tự thích ứng sáng/tối */
+                    border-radius: 12px; /* Bo góc chuẩn Lumosity */
+                    cursor: pointer; transition: all 0.15s ease; 
                 }
-                .mem-tile:hover { border-color: var(--text-muted); }
-                .mem-tile:active { transform: scale(0.96); }
+                .mem-tile:active { transform: scale(0.95); }
+                
+                /* Tương phản mạnh: Màu chớp sáng dùng Primary Color để chống chói ở Light Mode */
+                .mem-tile.flash { background-color: var(--primary-color); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+                .mem-tile.correct { background-color: var(--color-success); cursor: default; }
+                .mem-tile.wrong { background-color: var(--color-error); transform: scale(0.92); opacity: 0.7; cursor: default; }
 
-                /* Trạng thái chớp đề bài (Màu vàng kim ấm) */
-                .mem-tile.state-flash {
-                    background-color: #ecc94b !important; border-color: #ecc94b !important;
-                    box-shadow: 0 4px 15px rgba(236, 201, 75, 0.4);
+                /* Lật ô còn thiếu khi người chơi thua */
+                .mem-tile.reveal-missed { 
+                    background-color: var(--text-muted); 
+                    animation: pulse-reveal 1s infinite; cursor: default;
                 }
-
-                .mem-tile.state-correct {
-                    background-color: #48bb78 !important; border-color: #48bb78 !important; cursor: default;
-                }
-
-                /* YÊU CẦU 1: Bấm sai -> Biến thành ô rỗng đứt đoạn, chìm vào nền */
-                .mem-tile.state-wrong {
-                    background-color: transparent !important;
-                    border: 2px dashed var(--border-line) !important;
-                    opacity: 0.35; transform: scale(0.9); cursor: default;
+                @keyframes pulse-reveal {
+                    0% { transform: scale(1); opacity: 1; }
+                    50% { transform: scale(0.9); opacity: 0.6; }
+                    100% { transform: scale(1); opacity: 1; }
                 }
 
-                /* Lật bài khi thua */
-                .mem-tile.state-reveal {
-                    background-color: #38a169 !important; opacity: 0.65;
-                    border: 2px solid #fff !important;
+                /* Bảng điểm nội bộ (Cuối ván) */
+                .matrix-scoreboard {
+                    width: 100%; max-width: 320px; background-color: var(--bg-main);
+                    border-radius: 12px; padding: 20px; text-align: center; border: 1px solid var(--border-line);
                 }
-
-                /* Bảng điểm Game Over Flat */
-                .go-card { width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 14px; animation: fadeIn 0.3s ease; }
-                .go-card h3 { font-size: 13px; color: var(--text-muted); letter-spacing: 1.5px; text-transform: uppercase; text-align: center; }
-                .go-card h1 { font-size: 36px; color: var(--primary-color); font-weight: 900; text-align: center; line-height: 1; }
-                .go-table { display: flex; flex-direction: column; gap: 8px; margin: 10px 0; }
-                .go-row { display: flex; justify-content: space-between; padding: 10px 14px; background: var(--img-placeholder); border-radius: 8px; font-size: 14px; font-weight: 700; color: var(--text-dark); border: 1px solid var(--border-line); }
-                .go-row span:last-child { color: var(--primary-color); font-weight: 900; }
-                .go-actions { display: flex; gap: 12px; width: 100%; }
-                .btn-half { flex: 1; } /* Kế thừa btn-flat */
+                .sc-title { font-size: 14px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 10px; }
+                .sc-list { list-style: none; padding: 0; margin-bottom: 20px; text-align: left; }
+                .sc-list li { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border-line); font-size: 14px; font-weight: 700; color: var(--text-dark);}
+                .btn-mem-action { width: 100%; background-color: var(--primary-color); color: #fff; padding: 12px; border: none; border-radius: 12px; font-weight: 800; font-size: 14px; cursor: pointer; transition: 0.2s;}
+                .btn-mem-action:active { transform: scale(0.97); opacity: 0.9; }
             </style>
-
-            <div id="matrix-play-layer" style="width:100%; display:flex; flex-direction:column; align-items:center;">
-                <div class="mem-hud">
-                    <div>CẤP: <span id="hud-lvl">${state.level}</span></div>
-                    <div>ĐIỂM: <span id="hud-score" class="accent">${state.score}</span></div>
-                    <div>MẠNG: <span id="hud-live" class="accent">${state.lives}</span></div>
-                </div>
-                <div class="mem-status" id="hud-status">Đang tạo ma trận...</div>
-                <div class="mem-grid-container" id="hud-grid"></div>
+            
+            <div id="matrix-play-area" class="matrix-container">
+                <div id="mem-status" class="matrix-status">Đang nạp dữ liệu...</div>
+                <div id="mem-grid" class="matrix-grid"></div>
             </div>
 
-            <div id="matrix-go-layer" class="go-card" style="display:none;"></div>
+            <div id="matrix-end-area" class="matrix-container" style="display: none;"></div>
         `;
     }
 
-    function updateHUD() {
-        document.getElementById('hud-lvl').innerText = state.level;
-        document.getElementById('hud-score').innerText = Math.round(state.score);
-        document.getElementById('hud-live').innerText = state.lives;
+    function setStatus(text, type = 'normal') {
+        let el = document.getElementById('mem-status');
+        el.innerText = text;
+        if (type === 'highlight') el.style.color = 'var(--primary-color)';
+        else if (type === 'success') el.style.color = 'var(--color-success)';
+        else el.style.color = 'var(--text-dark)';
     }
 
-    function setStatusText(txt, color = 'var(--primary-color)') {
-        let el = document.getElementById('hud-status');
-        if(el) { el.innerText = txt; el.style.color = color; }
+    // --- GIAO TIẾP VỚI HỆ THỐNG MẸ (MAIN.JS) ---
+    function syncToSystem() {
+        if (window.GameInterface) {
+            if (window.GameInterface.updateScore) window.GameInterface.updateScore(Math.round(state.score));
+            if (window.GameInterface.updateLives) window.GameInterface.updateLives(state.lives);
+            // Gửi cả level lên thanh trạng thái chung (Nếu hệ thống có hỗ trợ hiển thị Màn)
+            if (window.GameInterface.updateLevel) window.GameInterface.updateLevel(state.level);
+        }
     }
 
-    // --- 4. VÒNG LẶP CHƠI GAME ---
-    function setupRound() {
-        updateHUD();
-        state.isInputAllowed = false;
+    // --- 4. LOGIC TRÒ CHƠI CHÍNH ---
+    function startLevel() {
+        syncToSystem();
+        state.isPlayerTurn = false;
         state.sequence = [];
         state.playerClicks = [];
-        state.wrongClicks = 0;
+        state.wrongClicksInRound = 0; 
 
-        // Lưu đỉnh cao Level
-        let curPeak = parseInt(localStorage.getItem('mm_matrix_peak_lvl')) || 1;
-        if (state.level > curPeak) localStorage.setItem('mm_matrix_peak_lvl', state.level);
+        // Checkpoint lưu cấp độ cao nhất
+        let currentMax = parseInt(localStorage.getItem('mm_matrix_max_level')) || 1;
+        if (state.level > currentMax) localStorage.setItem('mm_matrix_max_level', state.level);
 
-        state.gridSize = Math.min(3 + Math.floor((state.level - 1) / 3), 7);
-        state.targetCount = 2 + state.level;
+        state.gridSize = Math.min(3 + Math.floor((state.level - 1) / 3), 8);
+        state.targetCount = 2 + state.level; 
 
-        const gridEl = document.getElementById('hud-grid');
-        gridEl.style.gridTemplateColumns = `repeat(${state.gridSize}, 1fr)`;
-        gridEl.innerHTML = '';
+        const grid = document.getElementById('mem-grid');
+        grid.style.gridTemplateColumns = `repeat(${state.gridSize}, 1fr)`;
+        grid.innerHTML = '';
 
         for (let i = 0; i < state.gridSize * state.gridSize; i++) {
-            let t = document.createElement('div');
-            t.className = 'mem-tile';
-            t.onclick = () => onTileClick(t, i);
-            gridEl.appendChild(t);
+            let tile = document.createElement('div');
+            tile.className = 'mem-tile';
+            tile.dataset.id = i;
+            tile.onclick = () => onTileClick(tile, i);
+            grid.appendChild(tile);
         }
 
-        setStatusText("GHI NHỚ VỊ TRÍ", "var(--text-dark)");
+        setStatus("GHI NHỚ VỊ TRÍ", "highlight");
 
-        let pool = Array.from(Array(state.gridSize * state.gridSize).keys());
+        let allIndices = Array.from(Array(state.gridSize * state.gridSize).keys());
         for (let i = 0; i < state.targetCount; i++) {
-            let r = Math.floor(Math.random() * pool.length);
-            state.sequence.push(pool[r]);
-            pool.splice(r, 1);
+            let randomIdx = Math.floor(Math.random() * allIndices.length);
+            state.sequence.push(allIndices[randomIdx]);
+            allIndices.splice(randomIdx, 1);
         }
 
-        setSafeTimeout(() => {
-            const allTiles = gridEl.querySelectorAll('.mem-tile');
-            SfxEngine.flash();
-            state.sequence.forEach(id => allTiles[id].classList.add('state-flash'));
+        setGameTimeout(() => {
+            const tiles = document.querySelectorAll('.mem-tile');
+            AudioEngine.sfxFlash();
+            state.sequence.forEach(id => tiles[id].classList.add('flash'));
             
-            let flashDuration = Math.max(1000, state.targetCount * 220);
+            let viewTime = Math.max(1000, state.targetCount * 250);
 
-            setSafeTimeout(() => {
-                state.sequence.forEach(id => allTiles[id].classList.remove('state-flash'));
-                setStatusText("CHẠM ĐỂ CHỌN MỤC TIÊU");
-                state.isInputAllowed = true;
-            }, flashDuration);
+            setGameTimeout(() => {
+                state.sequence.forEach(id => tiles[id].classList.remove('flash'));
+                setStatus("CHẠM ĐỂ CHỌN", "normal");
+                state.isPlayerTurn = true; 
+            }, viewTime);
 
-        }, 450);
+        }, 500);
     }
 
-    // --- 5. LOGIC CLICK & TÍNH ĐIỂM CÔNG THỨC MỚI ---
-    function onTileClick(tile, idx) {
-        if (!state.isInputAllowed || tile.classList.contains('state-correct') || tile.classList.contains('state-wrong')) return;
+    // Lật ô còn thiếu khi thua
+    function revealMissedTiles(callback) {
+        const tiles = document.querySelectorAll('.mem-tile');
+        let missedCount = 0;
 
-        if (state.sequence.includes(idx)) {
-            tile.classList.add('state-correct');
-            SfxEngine.correct();
-            state.playerClicks.push(idx);
+        state.sequence.forEach(id => {
+            if (!state.playerClicks.includes(id)) {
+                tiles[id].classList.add('reveal-missed');
+                missedCount++;
+            }
+        });
 
+        if (missedCount > 0) {
+            AudioEngine.playTone(800, 'sine', 0.1, 0.03); 
+            setStatus("NHỮNG Ô BẠN BỎ LỠ", "normal");
+            setGameTimeout(callback, 2000); 
+        } else {
+            callback();
+        }
+    }
+
+    // --- 5. TƯƠNG TÁC LỖI & TỤT HẠNG & CỘNG ĐIỂM ---
+    function onTileClick(tileEl, id) {
+        if (!state.isPlayerTurn || tileEl.classList.contains('correct') || tileEl.classList.contains('wrong')) return;
+
+        // BẤM ĐÚNG
+        if (state.sequence.includes(id)) {
+            tileEl.classList.add('correct');
+            AudioEngine.sfxCorrect();
+            state.playerClicks.push(id);
+            
+            // Xong màn
             if (state.playerClicks.length === state.sequence.length) {
-                state.isInputAllowed = false;
-                SfxEngine.winTone();
-                setStatusText("CHÍNH XÁC!", "var(--color-success)");
-
-                // CÔNG THỨC TÍNH ĐIỂM MỚI CỦA LỘC:
+                state.isPlayerTurn = false;
+                AudioEngine.sfxLevelUp();
+                setStatus("TUYỆT VỜI!", "success");
+                
+                // TÍNH ĐIỂM DỰA TRÊN SỐ Ô (Mới)
                 let baseScore = state.targetCount * 10;
-                let actualEarned = baseScore;
+                let finalScoreAdd = baseScore;
 
-                if (state.wrongClicks === 1) actualEarned = baseScore * 0.9;
-                else if (state.wrongClicks === 2) actualEarned = baseScore * 0.8;
+                if (state.wrongClicksInRound === 1) finalScoreAdd = baseScore * 0.9;
+                else if (state.wrongClicksInRound >= 2) finalScoreAdd = baseScore * 0.8;
 
-                state.score += actualEarned;
-                updateHUD();
-
+                state.score += finalScoreAdd;
                 state.level++;
-                state.consecutiveFails = 0; // Thắng -> Xóa tội rớt hạng
-                setSafeTimeout(setupRound, 1200);
+                state.consecutiveFails = 0; 
+                
+                syncToSystem();
+                setGameTimeout(startLevel, 1200);
             }
         } 
+        // BẤM SAI
         else {
-            tile.classList.add('state-wrong');
-            SfxEngine.wrong();
-            state.wrongClicks++;
+            tileEl.classList.add('wrong');
+            AudioEngine.sfxWrong();
+            state.wrongClicksInRound++;
 
-            if (state.wrongClicks < 3) {
-                setStatusText(`SAI VỊ TRÍ! (${state.wrongClicks}/3)`);
+            if (state.wrongClicksInRound < 3) {
+                setStatus(`CẢNH BÁO! NHẦM Ô (${state.wrongClicksInRound}/3)`, "highlight");
             } 
             else {
-                // Sai 3 ô -> Thua lượt này
-                state.isInputAllowed = false;
+                state.isPlayerTurn = false;
                 state.lives--;
-                state.consecutiveFails++;
-                updateHUD();
+                state.consecutiveFails++; 
+                syncToSystem();
 
-                // LẬT ĐÁP ÁN CHO NGƯỜI CHƠI XEM
-                const allTiles = document.getElementById('hud-grid').querySelectorAll('.mem-tile');
-                state.sequence.forEach(id => {
-                    if (!state.playerClicks.includes(id)) allTiles[id].classList.add('state-reveal');
-                });
+                if (state.lives <= 0) {
+                    revealMissedTiles(() => { processGameOver(); });
+                    return;
+                }
 
-                SfxEngine.reveal();
-                setStatusText("ĐÁP ÁN BẠN ĐÃ BỎ LỠ", "var(--text-muted)");
-
-                setSafeTimeout(() => {
-                    if (state.lives <= 0) {
-                        triggerGameOverScreen();
-                        return;
-                    }
-
-                    if (state.consecutiveFails === 1) {
-                        setStatusText("THỬ LẠI CẤP ĐỘ NÀY");
-                        setSafeTimeout(setupRound, 1200);
-                    } else if (state.consecutiveFails >= 2) {
-                        setStatusText("GIẢM 1 CẤP ĐỘ");
-                        state.level = Math.max(1, state.level - 1);
-                        state.consecutiveFails = 0;
-                        setSafeTimeout(setupRound, 1200);
-                    }
-                }, 1800);
+                // CƠ CHẾ RỚT HẠNG
+                if (state.consecutiveFails === 1) {
+                    revealMissedTiles(() => {
+                        setStatus("MẤT MẠNG! CHƠI LẠI MÀN NÀY", "highlight");
+                        setGameTimeout(startLevel, 1500);
+                    });
+                } 
+                else if (state.consecutiveFails >= 2) {
+                    revealMissedTiles(() => {
+                        setStatus("TỤT 1 CẤP ĐỘ", "highlight");
+                        state.level = Math.max(1, state.level - 1); 
+                        state.consecutiveFails = 0; 
+                        setGameTimeout(startLevel, 1500);
+                    });
+                }
             }
         }
     }
 
-    // --- 6. YÊU CẦU 2: BẢNG XẾP HẠNG TOP 5 CÁ NHÂN 14 NGÀY ---
-    function triggerGameOverScreen() {
-        document.getElementById('matrix-play-layer').style.display = 'none';
+    // --- 6. KẾT THÚC GAME & BẢNG ĐIỂM NỘI BỘ 14 NGÀY ---
+    function processGameOver() {
+        AudioEngine.sfxGameOver();
         
-        let records = JSON.parse(localStorage.getItem('mm_matrix_history_14d') || '[]');
+        let scores = JSON.parse(localStorage.getItem('mm_matrix_records')) || [];
         let now = Date.now();
-        let limit14Days = now - (14 * 86400000);
+        let twoWeeksAgo = now - (14 * 24 * 60 * 60 * 1000);
+        
+        let roundedScore = Math.round(state.score);
+        if(roundedScore > 0) scores.push({ score: roundedScore, date: now, level: state.level });
 
-        if (state.score > 0) {
-            records.push({ s: Math.round(state.score), lvl: state.level, date: now });
-        }
+        // Lọc 14 ngày & Top 5
+        scores = scores.filter(item => item.date >= twoWeeksAgo)
+                       .sort((a, b) => b.score - a.score)
+                       .slice(0, 5);
+        localStorage.setItem('mm_matrix_records', JSON.stringify(scores));
 
-        // Lọc 14 ngày -> Sắp xếp giảm dần -> Lấy Top 5
-        records = records
-            .filter(r => r.date >= limit14Days)
-            .sort((a, b) => b.s - a.s)
-            .slice(0, 5);
-
-        localStorage.setItem('mm_matrix_history_14d', JSON.stringify(records));
-
-        // Bắn điểm về cho Hệ thống tổng (main.js)
-        if(window.AppManager) window.AppManager.addScore(Math.round(state.score));
-
-        let rowsHTML = records.map((r, i) => {
-            let dStr = new Date(r.date).toLocaleDateString('vi-VN', {day:'2-digit', month:'2-digit'});
-            return `<div class="go-row">
-                        <span>#0${i+1} &nbsp;[ Màn ${r.lvl} ]</span>
-                        <span><small style="color:var(--text-muted); font-weight:400;">${dStr}</small> &nbsp;${r.s}đ</span>
-                    </div>`;
-        }).join('');
-
-        if(records.length === 0) rowsHTML = `<p style="text-align:center; color:var(--text-muted);">Chưa có kỷ lục nào</p>`;
-
-        const goLayer = document.getElementById('matrix-go-layer');
-        goLayer.innerHTML = `
-            <h3>KẾT QUẢ HUẤN LUYỆN</h3>
-            <h1>${Math.round(state.score)} PTS</h1>
-            <p style="font-size:12px; color:var(--text-muted); text-align:center;">
-                (Lần tới sẽ khởi động từ Màn ${Math.max(1, state.level - 3)})
-            </p>
+        setGameTimeout(() => {
+            document.getElementById('matrix-play-area').style.display = 'none';
+            let endArea = document.getElementById('matrix-end-area');
             
-            <div class="go-table">
-                <small style="color:var(--text-muted); font-weight:800; margin-bottom:4px;">TOP 5 CÁ NHÂN (14 NGÀY QUA)</small>
-                ${rowsHTML}
-            </div>
+            let htmlList = scores.map((item, index) => {
+                let dateStr = new Date(item.date).toLocaleDateString('vi-VN', {day:'2-digit', month:'2-digit'});
+                return `<li>
+                            <span>#${index+1} - Màn ${item.level}</span>
+                            <span style="color: var(--text-muted); font-size:12px;">${dateStr} <b style="color: var(--color-success); font-size:14px; margin-left:8px;">${item.score}</b></span>
+                        </li>`;
+            }).join('');
+            if(scores.length === 0) htmlList = `<li style="justify-content:center; color:var(--text-muted);">Chưa có dữ liệu</li>`;
 
-            <div class="go-actions">
-                <button class="btn-flat btn-half" onclick="window.CurrentGame.restart()">Chơi Lại</button>
-                <button class="btn-back btn-half" style="margin:0; justify-content:center;" onclick="AppManager.quitGame()">Về Menu</button>
-            </div>
-        `;
-        goLayer.style.display = 'flex';
+            endArea.innerHTML = `
+                <div class="matrix-scoreboard">
+                    <div class="sc-title">KẾT QUẢ HUẤN LUYỆN</div>
+                    <div style="font-size: 40px; font-weight: 900; color: var(--color-success); margin-bottom: 5px;">${roundedScore}</div>
+                    <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 20px;">
+                        Đã lưu mốc: Bắt đầu lại từ màn ${Math.max(1, state.level - 3)}
+                    </div>
+                    
+                    <div class="sc-title" style="text-align:left; border-bottom: 1px solid var(--border-line); padding-bottom:5px;">TOP CÁ NHÂN (14 NGÀY)</div>
+                    <ul class="sc-list">${htmlList}</ul>
+
+                    <button class="btn-mem-action" onclick="window.CurrentGame.init()">CHƠI LẠI NGAY</button>
+                </div>
+            `;
+            endArea.style.display = 'flex';
+
+            // Bắn tín hiệu kết thúc tổng cho Hệ thống nếu cần
+            if(window.GameInterface && window.GameInterface.onGameOver) {
+                window.GameInterface.onGameOver(roundedScore);
+            }
+
+        }, 1200);
     }
 
-    // --- 7. EXPORT ĐỐI TƯỢNG RA MAIN.JS ---
-    window.CurrentGame = {
+    // --- XUẤT MODULE QUY CHUẨN ---
+    return {
         init: function() {
-            if (SfxEngine.ctx.state === 'suspended') {
-                document.addEventListener('click', () => SfxEngine.ctx.resume(), {once: true});
+            // Mở khóa Audio trên Browser
+            if (AudioEngine.ctx.state === 'suspended') {
+                document.addEventListener('click', () => AudioEngine.ctx.resume(), {once: true});
             }
-            loadCheckpoint();
-            injectGameDOM();
-            setupRound();
-        },
-        restart: function() {
-            state.timers.forEach(id => clearTimeout(id));
-            state.timers = [];
-            this.init();
+            
+            // Xử lý nạp mốc Checkpoint
+            let maxLevel = parseInt(localStorage.getItem('mm_matrix_max_level')) || 1;
+            state.level = Math.max(1, maxLevel - 3);
+            state.score = 0; state.lives = 3; state.consecutiveFails = 0;
+
+            renderUI();
+            startLevel();
         },
         cleanup: function() {
-            state.timers.forEach(id => clearTimeout(id));
-            state.timers = [];
+            // Dập tắt mọi vòng lặp khi user nhấn nút Tạm dừng -> Thoát ở Main UI
+            state.gameTimeouts.forEach(id => clearTimeout(id));
+            state.gameTimeouts = [];
         }
     };
 
