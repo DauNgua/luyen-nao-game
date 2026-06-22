@@ -5,15 +5,26 @@
 
 /* --- LIGHT THEME (MẶC ĐỊNH) --- */
 :root {
-    --bg-main: #f4f6f8;         
+    /* --bg-main: #f4f6f8;         
     --bg-card: #ffffff;         
     --border-line: #e2e8f0;     
     --text-dark: #2d3748;       
     --text-muted: #718096;      
     --primary-color: #f05e4b;   
-    --primary-hover: #d94e3c;  /* Màu nút khi di chuột qua ở chế độ sáng */
+    --primary-hover: #d94e3c;
     --img-placeholder: #edf2f7; 
-    --radius-main: 12px;
+    --radius-main: 12px; */
+
+    /* Màu mới */
+    --bg-main: #ebedf2;         /* 🟢 Hạ thấp xuống màu xám nhẹ để Card trắng #fff tự nổi bật lên */
+        --bg-card: #ffffff;         /* Giữ nguyên trắng tinh khôi */
+        --border-line: #cbd5e1;     /* 🟢 Làm đậm viền một chút để phân chia khối rõ ràng hơn */
+        --text-dark: #1e293b;       /* 🟢 Chuyển sang xanh đen Slate đậm, nhìn cực sang và dễ đọc */
+        --text-muted: #64748b;      /* Xám mờ của hệ màu hiện đại */
+        --primary-color: #f05e4b;   /* Màu cam gốc của bạn */
+        --primary-hover: #d94e3c;
+        --img-placeholder: #e2e8f0;
+        --radius-main: 12px;
 }
 
 /* --- DARK THEME (Sử dụng đúng màu Icon gốc của Lộc) --- */
