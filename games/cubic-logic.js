@@ -1,7 +1,6 @@
 /**
  * TÊN FILE: games/cubic-logic.js
- * BẢN CẬP NHẬT: Popup Hướng dẫn, Gợi ý Thị giác (Xuyên thấu, Nháy sáng).
- * Scaling: Lát cắt (19+), Bề mặt (25+).
+ * CẬP NHẬT: Fix hiệu ứng mờ Tầng (Mặt Cắt). Cập nhật text hướng dẫn Khối vàng.
  */
 
 window.CurrentGame = {
@@ -24,7 +23,7 @@ window.CurrentGame = {
         scoreMultiplier: 1.0,
         cubeIdCounter: 0,
         currentRoundSetup: {},
-        hintData: null // Lưu dữ liệu để bật hiệu ứng thị giác
+        hintData: null 
     },
 
     playWoodenSound: function(type) {
@@ -72,7 +71,7 @@ window.CurrentGame = {
                 .cb-timer-bar { width: 100%; height: 6px; background: var(--border-line); border-radius: 4px; margin-bottom: 15px; overflow: hidden; position: relative;}
                 .cb-timer-fill { height: 100%; background: var(--primary-color); width: 100%; transition: width 0.05s linear; }
                 
-                /* [MỚI] POPUP MODAL HƯỚNG DẪN */
+                /* POPUP MODAL HƯỚNG DẪN */
                 .cb-modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(3px); z-index: 100; display: none; justify-content: center; align-items: center; padding: 20px; border-radius: var(--radius-main);}
                 .cb-modal-box { background: var(--bg-card); border: 1px solid var(--border-line); border-radius: 12px; padding: 20px; text-align: center; width: 100%; max-width: 320px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
                 @keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
@@ -98,8 +97,8 @@ window.CurrentGame = {
                 .f-t { transform: translateZ(16px); background: #e2e8f0; } .f-b { transform: rotateX(180deg) translateZ(16px); background: #94a3b8; } .f-r { transform: rotateY(90deg) translateZ(16px); background: #cbd5e0; } .f-l { transform: rotateY(-90deg) translateZ(16px); background: #a0aec0; } .f-fr { transform: rotateX(90deg) translateZ(16px); background: #cbd5e0; } .f-bk { transform: rotateX(-90deg) translateZ(16px); background: #a0aec0; }
                 [data-theme="dark"] .f-t { background: #4a5568; } [data-theme="dark"] .f-r, [data-theme="dark"] .f-fr { background: #2d3748; } [data-theme="dark"] .f-l, [data-theme="dark"] .f-bk { background: #1a202c; }
                 
-                /* [MỚI] CLASSES CHO GỢI Ý THỊ GIÁC */
-                .cb-cube-3d.hint-fade { opacity: 0.15; } /* Khối bị mờ đi */
+                /* GỢI Ý THỊ GIÁC */
+                .cb-cube-3d.hint-fade { opacity: 0.2; } /* Khối bị mờ đi khi cắt lớp */
                 .cb-cube-3d.hint-glow .cb-face { border-color: #f5a623 !important; border-width: 2px; }
                 .cb-cube-3d.hint-glow .f-t { background: #fbd38d !important; } .cb-cube-3d.hint-glow .f-r, .cb-cube-3d.hint-glow .f-fr { background: #ed8936 !important; } .cb-cube-3d.hint-glow .f-l, .cb-cube-3d.hint-glow .f-bk { background: #dd6b20 !important; }
                 
@@ -109,6 +108,7 @@ window.CurrentGame = {
                 .cb-rules-box ul { padding-left: 20px; font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 10px; }
                 .cb-rules-box li { margin-bottom: 4px; }
                 .cb-rules-title { font-weight: 800; font-size: 14px; margin-bottom: 8px; color: var(--text-dark); }
+                
                 .start-actions { display: flex; flex-direction: column; gap: 10px; width: 100%; }
                 .btn-adv { background-color: var(--bg-card) !important; color: var(--primary-color) !important; border: 2px solid var(--primary-color) !important; }
                 @media (hover: hover) { .btn-adv:hover { background-color: var(--primary-color) !important; color: white !important; } }
@@ -123,9 +123,9 @@ window.CurrentGame = {
                         <p class="cb-rules-title">🎯 TIẾN TRÌNH TƯ DUY:</p>
                         <ul>
                             <li><b>Màn 1-14:</b> Đếm số lượng, đếm tầng, đếm khối ẩn.</li>
-                            <li><b>Màn 15+:</b> (Tiếp Xúc Mặt) Phân tích mật độ gắn kết.</li>
-                            <li><b>Màn 19+:</b> (Cắt Lớp) Phân tách không gian.</li>
-                            <li><b>Màn 25+:</b> (Bề Mặt Hở) Bài toán diện tích hình học.</li>
+                            <li><b>Màn 15+:</b> Phân tích khối bị che lấp (Góc khuất).</li>
+                            <li><b>Màn 19+:</b> Tưởng tượng Cắt lớp không gian.</li>
+                            <li><b>Màn 25+:</b> Tính diện tích bề mặt lộ ra ngoài.</li>
                         </ul>
                         <p style="font-size: 12px; color: var(--primary-color); font-style: italic; margin-top: 10px; text-align: center;">Mẹo: Các kỹ năng mới sẽ có màn Hướng Dẫn không tính giờ!</p>
                     </div>
@@ -234,7 +234,7 @@ window.CurrentGame = {
         let pool = [1, 2, 3];
         if (lvl >= 15) pool.push(4); // Mặt tiếp xúc (15+)
         if (lvl >= 19) pool.push(5); // Cắt lớp (19+)
-        if (lvl >= 25) pool.push(6); // Diện tích bề mặt (Đã dời lên 25+)
+        if (lvl >= 25) pool.push(6); // Diện tích bề mặt (25+)
 
         let qType;
         if (lvl === 15) qType = 4;
@@ -249,13 +249,14 @@ window.CurrentGame = {
 
         if (progress === 0) {
             setup.isTutorial = true;
-            // Số lượng khối cực ít cho lần đầu học
-            if (qType === 6) setup.cubeCount = Math.floor(Math.random() * 2) + 3; // Chỉ 3-4 khối cho diện tích mặt
+            // Số lượng khối khi hướng dẫn
+            if (qType === 6) setup.cubeCount = Math.floor(Math.random() * 2) + 3; // 3-4 khối
+            else if (qType === 5) setup.cubeCount = 8; // Cắt lớp cần ép xây tầng 2, nên cần ít nhất 8 khối
             else setup.cubeCount = Math.floor(Math.random() * 2) + 5; 
         } 
         else if (progress === 1) {
             setup.isTutorial = false;
-            setup.cubeCount = Math.floor(Math.random() * 3) + 8; // Vừa phải để thực hành
+            setup.cubeCount = Math.floor(Math.random() * 3) + 8; // Thực hành
         } 
         else {
             setup.isTutorial = false;
@@ -274,7 +275,7 @@ window.CurrentGame = {
         this.setupRoundLogic(); 
         this.state.rotationsLeft = this.config.maxRotations; 
         this.state.currentAngle = 45;
-        this.state.hintData = null; // Reset gợi ý
+        this.state.hintData = null; 
 
         const sceneEl = document.getElementById('cb-scene');
         sceneEl.style.transition = 'none'; 
@@ -305,13 +306,13 @@ window.CurrentGame = {
 
         if (qType === 4) {
             title.innerText = "Tư Duy: Mật Độ";
-            desc.innerHTML = "Câu hỏi mới bắt bạn tìm khối bị <b>kẹp chặt</b> bởi khối khác.<br><br>👉 <i>Khối mẫu nhấp nháy trên màn hình đang bị che ít nhất 3 mặt. Các mặt chạm đất không bị tính.</i>";
+            desc.innerHTML = "Tìm khối bị <b>kẹp chặt</b> bởi khối khác.<br><br>👉 <i>Khối cần tìm (khối bị che ít nhất 3 mặt) sẽ có màu vàng. (Các mặt chạm đất không tính là che mặt).</i>";
         } else if (qType === 5) {
             title.innerText = "Tư Duy: Cắt Lớp";
-            desc.innerHTML = "Bạn phải tưởng tượng dùng một con dao cắt ngang khối nhà ở một tầng chỉ định (Tầng chạm đất là Tầng 1).<br><br>👉 <i>Những khối trong suốt (bị làm mờ) là những tầng nằm bên trên mà bạn phải phớt lờ đi!</i>";
+            desc.innerHTML = "Hãy tưởng tượng dùng một con dao cắt ngang khối nhà ở một tầng chỉ định (Tầng chạm đất là Tầng 1).<br><br>👉 <i>Những tầng nằm bên trên (trong suốt) bị cắt bỏ đi. Bạn chỉ đếm khối ở tầng dưới cùng đặc màu!</i>";
         } else if (qType === 6) {
             title.innerText = "Tư Duy: Diện Tích Hở";
-            desc.innerHTML = "Câu hỏi khó nhất: Hãy đếm tất cả các <b>mặt vuông</b> lộ ra ngoài không khí.<br><br>👉 <i>Mỗi khối cô lập có 6 mặt hở. Nhưng khi 2 khối dính nhau, 2 mặt tiếp xúc sẽ bị giấu đi. Hãy quét kỹ!</i>";
+            desc.innerHTML = "Câu hỏi cao cấp: Hãy đếm tất cả các <b>mặt vuông</b> lộ ra ngoài không khí.<br><br>👉 <i>Mỗi khối cô lập có 6 mặt hở. Nhưng khi 2 khối dính nhau, 2 mặt tiếp xúc sẽ bị giấu đi. Hãy quét kỹ!</i>";
         }
 
         modal.style.display = 'flex';
@@ -319,7 +320,7 @@ window.CurrentGame = {
 
     closeTutorial: function() {
         document.getElementById('cb-tutorial-modal').style.display = 'none';
-        this.applyVisualHints(); // Kích hoạt hiệu ứng trên khối
+        this.applyVisualHints(); // Kích hoạt hiệu ứng trên khối sau khi đóng popup
     },
 
     applyVisualHints: function() {
@@ -332,16 +333,12 @@ window.CurrentGame = {
             if (targetCube) targetCube.classList.add('hint-glow');
         } 
         else if (qType === 5) {
-            // Làm mờ tầng trên
+            // Làm mờ tầng nằm TRÊN lát cắt
             let targetZ = this.state.hintData.targetZ;
             document.querySelectorAll('.cb-cube-3d').forEach(el => {
                 let z = parseInt(el.getAttribute('data-z'));
                 if (z > targetZ) el.classList.add('hint-fade');
             });
-        }
-        else if (qType === 3) {
-             let targetCube = document.querySelector(`.cb-cube-3d[data-id="${this.state.hintData.exampleId}"]`);
-             if (targetCube) targetCube.classList.add('hint-glow');
         }
     },
 
@@ -375,15 +372,15 @@ window.CurrentGame = {
             this.state.cubes.push({ id: this.state.cubeIdCounter++, x: 0, y: 0, z: 0 });
             occupied.add(getKey(0, 0, 0));
 
-            // Đảm bảo Type 5 (Cắt lớp) thì cấu trúc phải cao lên Z=2
-            let forceHeight = (this.state.currentRoundSetup.type === 5 && targetCount > 5) ? true : false;
-
             while (this.state.cubes.length < targetCount) {
                 let baseCube = this.state.cubes[Math.floor(Math.random() * this.state.cubes.length)];
                 
-                // Nếu ép độ cao, ưu tiên hướng Z+
                 let dirs = [{dx: 1, dy: 0, dz: 0}, {dx: -1, dy: 0, dz: 0}, {dx: 0, dy: 1, dz: 0}, {dx: 0, dy: -1, dz: 0}, {dx: 0, dy: 0, dz: 1}];
-                if (forceHeight && Math.random() < 0.5) dirs = [{dx: 0, dy: 0, dz: 1}];
+                
+                // [FIX LỖI MẶT CẮT]: Ép các khối phải mọc thẳng lên Tầng 2, Tầng 3
+                if (this.state.currentRoundSetup.type === 5) {
+                    dirs = [{dx: 0, dy: 0, dz: 1}, {dx: 0, dy: 0, dz: 1}, {dx: 1, dy: 0, dz: 0}, {dx: 0, dy: 1, dz: 0}];
+                }
 
                 let dir = dirs[Math.floor(Math.random() * dirs.length)];
                 let nx = baseCube.x + dir.dx, ny = baseCube.y + dir.dy, nz = baseCube.z + dir.dz;
@@ -414,7 +411,7 @@ window.CurrentGame = {
         this.state.cubes.forEach(c => {
             let cssCube = document.createElement('div');
             cssCube.className = `cb-cube-3d`;
-            // Cài thuộc tính data-* để Gợi ý thị giác có thể chọn đúng khối
+            // Cài data-id và data-z để Javascript làm mờ tầng cắt và bôi vàng khối dễ dàng
             cssCube.setAttribute('data-id', c.id);
             cssCube.setAttribute('data-z', c.z);
 
@@ -459,20 +456,24 @@ window.CurrentGame = {
         else if (setup.type === 3) { 
             qText = "Có bao nhiêu khối BỊ KHỐI KHÁC ĐÈ LÊN?";
             let cSet = new Set(this.state.cubes.map(c => `${c.x},${c.y},${c.z}`));
-            let buried = this.state.cubes.filter(c => cSet.has(`${c.x},${c.y},${c.z + 1}`));
-            ans = buried.length;
-            if (setup.isTutorial && buried.length > 0) this.state.hintData = { exampleId: buried[0].id };
+            ans = this.state.cubes.filter(c => cSet.has(`${c.x},${c.y},${c.z + 1}`)).length;
         }
         else if (setup.type === 4) {
-            qText = "Có bao nhiêu khối bị che ≥3 MẶT? (Chỉ tính mặt chạm khối khác)";
+            qText = "Có bao nhiêu khối bị che ≥3 MẶT? (Chỉ đếm mặt chạm khối khác)";
             adjData = getAdjacencies();
             let covered = this.state.cubes.filter(c => adjData.map.get(c.id) >= 3);
             ans = covered.length;
             if (setup.isTutorial && covered.length > 0) this.state.hintData = { exampleId: covered[0].id };
         }
         else if (setup.type === 5) {
-            let hasLevel2 = this.state.cubes.some(c => c.z >= 1);
-            let targetZ = hasLevel2 ? 1 : 0;
+            // [FIX LỖI]: Màn hướng dẫn BẮT BUỘC hỏi Tầng 1 (Z=0) để các Tầng 2,3 (Z>0) mờ đi
+            let targetZ = 1; // Hỏi tầng 2
+            if (setup.isTutorial) {
+                targetZ = 0; 
+            } else if (!this.state.cubes.some(c => c.z >= 1)) {
+                targetZ = 0; // Đề phòng lỗi thiếu khối
+            }
+            
             qText = `Nếu CẮT NGANG Tầng ${targetZ + 1}, lát cắt có bao nhiêu khối?`;
             ans = this.state.cubes.filter(c => c.z === targetZ).length;
             if (setup.isTutorial) this.state.hintData = { targetZ: targetZ };
@@ -493,7 +494,7 @@ window.CurrentGame = {
             attempts++;
             let variance = (setup.type === 6) ? 4 + Math.floor(attempts / 4) : 2 + Math.floor(attempts / 5); 
             let f = ans + Math.floor(Math.random() * (variance * 2 + 1)) - variance;
-            if (f > 0 && f !== ans) opts.add(f); 
+            if (f >= 0 && f !== ans) opts.add(f); 
             if (attempts > 50) opts.add(ans + opts.size + 1);
         }
         
@@ -515,7 +516,6 @@ window.CurrentGame = {
 
     handleChoice: function(selected) {
         if (!this.state.isPlaying || this.state.isTransitioning) return;
-        // Chặn click xuyên modal
         if (document.getElementById('cb-tutorial-modal').style.display === 'flex') return;
 
         this.state.isTransitioning = true;
