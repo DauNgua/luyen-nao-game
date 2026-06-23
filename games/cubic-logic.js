@@ -97,8 +97,19 @@ window.CurrentGame = {
                 .f-t { transform: translateZ(16px); background: #e2e8f0; } .f-b { transform: rotateX(180deg) translateZ(16px); background: #94a3b8; } .f-r { transform: rotateY(90deg) translateZ(16px); background: #cbd5e0; } .f-l { transform: rotateY(-90deg) translateZ(16px); background: #a0aec0; } .f-fr { transform: rotateX(90deg) translateZ(16px); background: #cbd5e0; } .f-bk { transform: rotateX(-90deg) translateZ(16px); background: #a0aec0; }
                 [data-theme="dark"] .f-t { background: #4a5568; } [data-theme="dark"] .f-r, [data-theme="dark"] .f-fr { background: #2d3748; } [data-theme="dark"] .f-l, [data-theme="dark"] .f-bk { background: #1a202c; }
                 
-                /* GỢI Ý THỊ GIÁC */
-                .cb-cube-3d.hint-fade { opacity: 0.2; } /* Khối bị mờ đi khi cắt lớp */
+                /* GỢI Ý THỊ GIÁC (Đã sửa lỗi bẹp 2D) */
+                /* Biến khối bị cắt thành khối Thủy tinh 3D (Hologram) */
+                /* --- GỢI Ý THỊ GIÁC (Đã Fix lỗi tẩy màu khối bên dưới) --- */
+                .cb-cube-3d.hint-fade .cb-face {
+                    /* Dùng màu đen cực kỳ nhạt (3%) thay vì màu trắng, để không làm lóa màu khối bên dưới */
+                    background: rgba(0, 0, 0, 0.03) !important; 
+                    border-color: rgba(0, 0, 0, 0.15) !important;
+                }
+                [data-theme="dark"] .cb-cube-3d.hint-fade .cb-face {
+                    /* Dark mode dùng màu trắng cực nhạt (3%) */
+                    background: rgba(255, 255, 255, 0.03) !important; 
+                    border-color: rgba(255, 255, 255, 0.15) !important;
+                }
                 .cb-cube-3d.hint-glow .cb-face { border-color: #f5a623 !important; border-width: 2px; }
                 .cb-cube-3d.hint-glow .f-t { background: #fbd38d !important; } .cb-cube-3d.hint-glow .f-r, .cb-cube-3d.hint-glow .f-fr { background: #ed8936 !important; } .cb-cube-3d.hint-glow .f-l, .cb-cube-3d.hint-glow .f-bk { background: #dd6b20 !important; }
                 
