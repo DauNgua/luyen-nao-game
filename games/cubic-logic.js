@@ -72,11 +72,24 @@ window.CurrentGame = {
                 .cb-timer-fill { height: 100%; background: var(--primary-color); width: 100%; transition: width 0.05s linear; }
                 
                 /* POPUP MODAL HƯỚNG DẪN */
-                .cb-modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(3px); z-index: 100; display: none; justify-content: center; align-items: center; padding: 20px; border-radius: var(--radius-main);}
-                .cb-modal-box { background: var(--bg-card); border: 1px solid var(--border-line); border-radius: 12px; padding: 20px; text-align: center; width: 100%; max-width: 320px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-                @keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-                .cb-modal-title { font-size: 18px; font-weight: 900; color: var(--primary-color); margin-bottom: 10px; text-transform: uppercase; }
-                .cb-modal-desc { font-size: 14px; color: var(--text-dark); line-height: 1.5; margin-bottom: 20px; }
+                /* --- PHONG CÁCH 3: THÔNG BÁO TÍCH HỢP (IN-GAME MESSAGE) --- */
+.cb-modal-overlay { 
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+    z-index: 100; display: none; justify-content: center; align-items: flex-end; 
+    pointer-events: none; /* Xóa đệm để popup dính sát đáy */
+}
+.cb-modal-box { 
+    background: var(--bg-card); 
+    border-top: 3px solid var(--primary-color);
+    border-radius: 20px 20px 0 0; padding: 25px 20px 30px 20px; text-align: center; width: 100%; 
+    box-shadow: 0 -5px 25px rgba(0,0,0,0.1); 
+    animation: slideUpPanel 0.3s ease-out; pointer-events: auto;
+}
+[data-theme="dark"] .cb-modal-box { box-shadow: 0 -5px 25px rgba(0,0,0,0.4); }
+@keyframes slideUpPanel { 0% { transform: translateY(100%); } 100% { transform: translateY(0); } }
+
+.cb-modal-title { font-size: 14px; font-weight: 900; color: var(--text-muted); margin-bottom: 8px; letter-spacing: 2px;}
+.cb-modal-desc { font-size: 15px; font-weight: 600; color: var(--text-dark); line-height: 1.5; margin-bottom: 20px; }
                 
                 .cb-question { font-size: 17px; font-weight: 800; margin-bottom: 10px; line-height: 1.4; color: var(--text-dark); text-align: center; min-height: 48px; display: flex; align-items: center; justify-content: center;}
                 
