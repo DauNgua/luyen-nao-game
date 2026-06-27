@@ -67,22 +67,21 @@
 </div>
 
                     <div class="game-card" onclick="AppManager.openGame('cubic-logic')">
-    <div class="card-image-box" style="background:#fffaf0;">[ Icon Chữ ]</div>
-    <div class="card-info">
-        <div class="card-title">Khối logic</div>
-        <div class="card-desc">FLEXIBILITY</div>
-        <div class="card-sub-desc">Huỷ diệt não bộ</div>
-    </div>
-</div>
+                        <div class="card-image-box" style="background:#fffaf0;">[ Icon Chữ ]</div>
+                        <div class="card-info">
+                            <div class="card-title">Khối logic</div>
+                            <div class="card-desc">FLEXIBILITY</div>
+                            <div class="card-sub-desc">Huỷ diệt não bộ</div>
+                        </div>
+                    </div>
 
                     
-
-                    <div class="game-card">
-                        <div class="card-image-box" style="background:#e6fffa;">[ Sắp ra mắt ]</div>
+                    <div class="game-card" onclick="AppManager.openGame('o-to-khong-phanh')">
+                        <div class="card-image-box" style="background:#e6fffa;">[ 🛻 ]</div>
                         <div class="card-info">
-                            <div class="card-title">Speed Match</div>
-                            <div class="card-desc">SPEED</div>
-                            <div class="card-sub-desc">Information Processing</div>
+                            <div class="card-title">Ô tô không phanh</div>
+                            <div class="card-desc">FLEXIBILITY</div>
+                            <div class="card-sub-desc">Điều khiển để không lên 'thàn bờ'</div>
                         </div>
                     </div>
 
@@ -127,15 +126,25 @@
     <script src="main.js"></script>
 
     <script>
-        // === 1. TÍNH NĂNG DARK/LIGHT MODE HỆ THỐNG ===
+        // 2. KÍCH HOẠT TÍNH NĂNG LIGHT/DARK THEME THÔNG MINH
         const toggleSwitch = document.getElementById('theme-toggle');
-        const currentTheme = localStorage.getItem('appTheme') || 'light';
+        
+        // Bước 1: Kiểm tra xem User đã từng bấm lưu Theme trong Game chưa
+        let currentTheme = localStorage.getItem('appTheme');
 
+        // Bước 2: Nếu chưa từng lưu, tự động quét xem điện thoại/máy tính của họ đang để Dark Mode không
+        if (!currentTheme) {
+            const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+            currentTheme = prefersDarkScheme.matches ? 'dark' : 'light';
+        }
+
+        // Bước 3: Áp dụng Theme đã lấy được
         if (currentTheme === 'dark') {
             document.documentElement.setAttribute('data-theme', 'dark');
             toggleSwitch.checked = true;
         }
 
+        // Bước 4: Lắng nghe sự kiện người dùng tự tay Gạt công tắc (Sẽ ưu tiên ghi nhớ lựa chọn này)
         toggleSwitch.addEventListener('change', function(e) {
             if (e.target.checked) {
                 document.documentElement.setAttribute('data-theme', 'dark');
@@ -144,6 +153,15 @@
                 document.documentElement.setAttribute('data-theme', 'light');
                 localStorage.setItem('appTheme', 'light');
             }    
+        });
+
+        // Tùy chọn mở rộng: Lắng nghe nếu User đột ngột đổi Theme hệ thống khi đang mở App (Bỏ qua nếu họ đã tự gạt nút)
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+            if (!localStorage.getItem('appTheme')) {
+                let newTheme = event.matches ? "dark" : "light";
+                document.documentElement.setAttribute('data-theme', newTheme);
+                toggleSwitch.checked = (newTheme === 'dark');
+            }
         });
 
         // === 2. SERVICE WORKER PWA ===
