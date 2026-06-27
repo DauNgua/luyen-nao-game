@@ -1,75 +1,86 @@
 // =========================================
-// SERVICE WORKER - PRE-CACHE & AUTO-UPDATE
-// Đảm bảo 100% không báo 404 khi Offline
+// SERVICE WORKER - PRE-CACHE & AUTO-UPDATE V3
 // =========================================
 
-const CACHE_NAME = 'brain-os-dynamic-cache';
+const CACHE_NAME = 'brain-os-dynamic-v3';
 
-// DANH SÁCH BẮT BUỘC PHẢI KHAI BÁO CÁC FILE ĐỂ NẠP TRƯỚC
-// Bạn phải liệt kê tất cả các file game con vào đây!
+// Liệt kê chính xác tên thư mục. Đừng thừa dấu '/' nào.
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
     './style.css',
     './main.js',
     './manifest.json',
+    './games/tri-nho-co-dien.js',
+    './games/matrix-rotate.js',
     './games/cubic-logic.js',
-    './games/tri-nho-co-dien.js', // File game con số 1
-    './games/matrix-rotate.js',   // File game con số 2 (Khai báo thêm nếu bạn làm xong)
-    './games/mau-sac-lua-doi.js',
-    // Cứ mỗi khi tạo 1 game mới, phải thêm đường dẫn file vào danh sách này.
+    './games/mau-sac-lua-doi.js'
 ];
 
-// 1. CÀI ĐẶT: Nạp trước toàn bộ Súng Ống Đạn Dược (Pre-caching)
 self.addEventListener('install', event => {
-    self.skipWaiting(); // Ép kích hoạt ngay
-    
+    self.skipWaiting();
     event.waitUntil(
         caches.open(CACHE_NAME).then(cache => {
-            console.log('[SW] Đang tải sẵn toàn bộ file hệ thống và Game Con vào ổ cứng...');
-            return cache.addAll(ASSETS_TO_CACHE);
-        }).catch(err => {
-            console.error('[SW] Lỗi Nạp trước:', err);
+            console.log('[SW] Cài đặt PWA: Lưu đệm toàn bộ tài sản...');
+            // Dùng { cache: 'reload' } để bỏ qua cache thừa của HTTP
+            const requests = ASSETS_TO_CACHE.map(url => new Request(url, { cache: 'reload' }));
+            return cache.addAll(requests);
         })
     );
 });
 
-// 2. KÍCH HOẠT: Chiếm quyền điều khiển
 self.addEventListener('activate', event => {
-    event.waitUntil(self.clients.claim());
+    event.waitUntil(
+        caches.keys().then(cacheNames => {
+            return Promise.all(
+                cacheNames.map(cacheName => {
+                    if (cacheName !== CACHE_NAME) {
+                        return caches.delete(cacheName);
+                    }
+                })
+            );
+        })
+    );
+    self.clients.claim();
 });
 
-// 3. TÌM NẠP (FETCH): Cơ chế Stale-While-Revalidate (Cho Game không bao giờ cũ)
 self.addEventListener('fetch', event => {
-    const requestUrl = event.request.url;
-
-    // Bỏ qua các API của Supabase và Extension
-    if (requestUrl.includes('supabase.co') || requestUrl.startsWith('chrome-extension://')) {
-        return;
-    }
-
-    if (event.request.method !== 'GET') {
+    // 1. Chặn request API và các lệnh tải ngoài
+    if (event.request.method !== 'GET' || event.request.url.includes('supabase.co')) {
         return;
     }
 
     event.respondWith(
-        caches.open(CACHE_NAME).then(cache => {
-            return cache.match(event.request).then(cachedResponse => {
-                
-                // Mệnh lệnh song song: Cập nhật file mới từ Server về máy
-                const fetchPromise = fetch(event.request).then(networkResponse => {
-                    if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+        caches.match(event.request).then(cachedResponse => {
+            // Chiến thuật "Bắt hai tay": Trả cache nếu có, ngầm lên mạng tải mới!
+            const fetchPromise = fetch(event.request).then(networkResponse => {
+                if (networkResponse && networkResponse.status === 200) {
+                    caches.open(CACHE_NAME).then(cache => {
                         cache.put(event.request, networkResponse.clone());
-                    }
-                    return networkResponse;
-                }).catch(err => {
-                    console.log('[SW-Auto] Offline, dùng cache cho:', requestUrl);
-                });
-
-                // Nhả file từ Cache ra ngay lập tức cho tốc độ tải cực nhanh
-                // Nếu chưa có (Bị lọt sổ), chờ kéo từ mạng về.
-                return cachedResponse || fetchPromise;
+                    });
+                }
+                return networkResponse;
+            }).catch(err => {
+                console.log('[SW] Đang Mất Mạng!');
             });
+
+            // Nếu trong máy không có, mạng cũng rớt -> Quăng Phao Cứu Sinh (Fallback HTML)
+            if (!cachedResponse) {
+                return fetchPromise.catch(() => {
+                    // Trả về trang lỗi HTML tự sinh (Áp dụng nếu là request HTML, nếu là JS/CSS thì kệ)
+                    if (event.request.headers.get('accept').includes('text/html')) {
+                        return new Response(
+                            `<div style="color:white; background:#2b2c31; height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:sans-serif;">
+                                <h1 style="color:#f05e4b;">⚠️ CẤT MẠNG RỒI SẾP ƠI!</h1>
+                                <p>Cần kết nối Wifi 1 lần duy nhất để tôi tải game vào ổ cứng đã nha!</p>
+                            </div>`,
+                            { headers: { 'Content-Type': 'text/html' } }
+                        );
+                    }
+                });
+            }
+
+            return cachedResponse || fetchPromise;
         })
     );
 });
