@@ -127,14 +127,8 @@ window.CurrentGame = {
                 .cb-rotate-btn:disabled { opacity: 0.4; cursor: not-allowed; }
                 .cb-rotate-count { font-size: 12px; font-weight: bold; color: var(--text-muted); }
 
-                /* ----------------------------------------------------
-                   TRUE 3D ENGINE
-                   ---------------------------------------------------- */
-                /* Khung giới hạn hiển thị, ẩn các phần tràn ra ngoài */
-                .cb-canvas-box { 
-                    width: 100%; height: 180px; border-radius: var(--radius-main); margin-bottom: 20px; 
-                    position: relative; display: flex; justify-content: center; align-items: center; overflow: hidden; perspective: 1200px; 
-                }
+                /* 3D ENGINE (Đã thêm touch-action: none để kéo vuốt khối trên Mobile mượt mà) */
+                .cb-canvas-box { width: 100%; height: 180px; border-radius: var(--radius-main); margin-bottom: 20px; position: relative; display: flex; justify-content: center; align-items: center; overflow: visible; perspective: 1200px; touch-action: none; }
                 
                 /* Bộ điều khiển Camera (Zoom & Căn giữa) */
                 .cb-camera { 
@@ -276,16 +270,19 @@ window.CurrentGame = {
         `;
         this.showMenu();
 
-        // --- KHỞI TẠO EVENT PARALLAX (Chỉ chạy 1 lần trên Desktop) ---
+        // --- HỆ THỐNG PARALLAX KÉP: HOVER CHO PC & DÂY CHUN CHO MOBILE ---
         if (!this.state.parallaxInitialized) {
+            
+            // 1. DÀNH CHO PC (Di chuột Hover nhẹ nhàng)
             document.addEventListener('mousemove', (e) => {
+                // Kiểm tra nếu là thiết bị cảm ứng (Mobile) thì chặn ngay, tránh lỗi giật hình khi bấm nút
+                if (window.matchMedia("(pointer: coarse)").matches) return;
                 if (!window.CurrentGame.state.isPlaying || window.CurrentGame.state.isTransitioning) return;
                 
                 const scene = document.getElementById('cb-scene');
                 if (!scene) return;
 
                 scene.classList.add('parallax-active');
-
                 const x = (e.clientX / window.innerWidth - 0.5) * 2;
                 const y = (e.clientY / window.innerHeight - 0.5) * 2;
                 
@@ -293,16 +290,57 @@ window.CurrentGame = {
                 scene.style.setProperty('--tilt-y', `${y * 6}deg`);
             });
 
-            document.addEventListener('mouseleave', () => {
+            // 2. DÀNH CHO MOBILE (Chạm & Kéo Dây Chun - Rubber Band Drag)
+            let touchStartX = 0;
+            let touchStartY = 0;
+
+            document.addEventListener('touchstart', (e) => {
+                // Chỉ nhận lệnh chạm nếu ngón tay đặt đúng vào khu vực cụm khối 3D (.cb-canvas-box)
+                const box = e.target.closest('.cb-canvas-box');
+                if (!box || !window.CurrentGame.state.isPlaying) return;
+
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+                
+                const scene = document.getElementById('cb-scene');
+                if (scene) scene.classList.add('parallax-active');
+            }, { passive: false });
+
+            document.addEventListener('touchmove', (e) => {
+                const box = e.target.closest('.cb-canvas-box');
+                if (!box || !window.CurrentGame.state.isPlaying) return;
+
+                // Chặn cuộn trang web khi đang kéo nghiêng khối
+                if (e.cancelable) e.preventDefault();
+
+                const deltaX = e.touches[0].clientX - touchStartX;
+                const deltaY = e.touches[0].clientY - touchStartY;
+
+                // Công thức Dây chun: Độ nhạy 0.08 độ/pixel. KHÓA CỨNG TỐI ĐA ±8 ĐỘ (Chống gian lận nhìn ra sau)
+                const tiltX = Math.max(-8, Math.min(8, deltaX * 0.08));
+                const tiltY = Math.max(-8, Math.min(8, -deltaY * 0.08));
+
+                const scene = document.getElementById('cb-scene');
+                if (scene) {
+                    scene.style.setProperty('--tilt-x', `${tiltX}deg`);
+                    scene.style.setProperty('--tilt-y', `${tiltY}deg`);
+                }
+            }, { passive: false });
+
+            // Hiệu ứng Đàn hồi: Thả ngón tay -> Khối tự động nảy về 0 độ
+            document.addEventListener('touchend', () => {
                 const scene = document.getElementById('cb-scene');
                 if (scene) {
                     scene.style.setProperty('--tilt-x', `0deg`);
                     scene.style.setProperty('--tilt-y', `0deg`);
                 }
             });
+
             this.state.parallaxInitialized = true;
         }
     },
+
+    
 
     // =====================================================================
     // 4. QUẢN LÝ MENU VÀ HẠNG CÂN ĐỘNG
