@@ -479,7 +479,7 @@ window.CurrentGame = {
         sceneEl.style.setProperty('--rot-speed', `${this.config.rotateSpeed}ms`);
         
         // [CẬP NHẬT] Set tốc độ Camera (Zoom chậm, mượt). Bạn có thể chỉnh 800ms thành 1000ms tùy ý ở đây:
-        let cameraSpeed = 800; 
+        let cameraSpeed = 1200; 
         cameraEl.style.setProperty('--cam-speed', `${cameraSpeed}ms`);
         
         this.generateCubesForLevel();
