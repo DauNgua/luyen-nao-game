@@ -130,11 +130,12 @@ window.CurrentGame = {
                 /* 3D ENGINE (Đã thêm touch-action: none để kéo vuốt khối trên Mobile mượt mà) */
                 .cb-canvas-box { width: 100%; height: 180px; border-radius: var(--radius-main); margin-bottom: 20px; position: relative; display: flex; justify-content: center; align-items: center; overflow: visible; perspective: 1200px; touch-action: none; }
                 
-                /* Bộ điều khiển Camera (Zoom & Căn giữa) */
+                /* [BỘ ĐIỀU KHIỂN CAMERA 2D] (Chịu trách nhiệm Zoom và Căn giữa) */
                 .cb-camera { 
                     position: absolute; transform-style: preserve-3d;
                     transform: scale(var(--scene-scale, 1)) translate(var(--scene-tx, 0px), var(--scene-ty, 0px));
-                    transition: transform var(--rot-speed) cubic-bezier(0.25, 1, 0.5, 1);
+                    /* [ĐÃ SỬA] Đổi biến transition sang --cam-speed để điều khiển riêng biệt */
+                    transition: transform var(--cam-speed, 800ms) cubic-bezier(0.25, 1, 0.5, 1);
                 }
 
                 /* Mâm quay 3D kết hợp Parallax Trục X và Z */
@@ -463,7 +464,6 @@ window.CurrentGame = {
         if (this.state.lives <= 0) return this.gameOver();
         
         this.setupRoundLogic(); 
-        
         this.state.rotationsLeft = this.config.maxRotations; 
         this.state.currentAngle = 45;
         this.state.hintData = null; 
@@ -471,15 +471,18 @@ window.CurrentGame = {
         const sceneEl = document.getElementById('cb-scene');
         const cameraEl = document.getElementById('cb-camera');
         
-        sceneEl.classList.remove('parallax-active');
         sceneEl.style.transition = 'none'; 
         cameraEl.style.transition = 'none'; 
-        
         sceneEl.style.setProperty('--scene-z', `${this.state.currentAngle}deg`);
-        sceneEl.style.setProperty('--rot-speed', `${this.config.rotateSpeed}ms`);
-        cameraEl.style.setProperty('--rot-speed', `${this.config.rotateSpeed}ms`);
         
-        this.generateCubesForLevel(); 
+        // Set tốc độ xoay khối (nhanh)
+        sceneEl.style.setProperty('--rot-speed', `${this.config.rotateSpeed}ms`);
+        
+        // [CẬP NHẬT] Set tốc độ Camera (Zoom chậm, mượt). Bạn có thể chỉnh 800ms thành 1000ms tùy ý ở đây:
+        let cameraSpeed = 800; 
+        cameraEl.style.setProperty('--cam-speed', `${cameraSpeed}ms`);
+        
+        this.generateCubesForLevel();
         this.adjustCamera(); 
         this.renderScene();
         this.generateQuestionAndOptions();
